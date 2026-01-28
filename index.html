@@ -39,7 +39,7 @@
                 <select id="filter_camp" class="bg-emerald-50 text-emerald-700 text-[9px] font-black p-2 rounded-lg border border-emerald-100 outline-none"></select>
                 <select id="filter_month" class="bg-blue-50 text-blue-700 text-[9px] font-black p-2 rounded-lg border border-blue-100 outline-none"></select>
                 <select id="filter_week" class="bg-slate-100 text-slate-700 text-[9px] font-black p-2 rounded-lg border border-slate-200 outline-none"></select>
-                <button id="btn_excel" onclick="generarExcel()" class="hidden bg-emerald-600 text-white px-4 py-2 rounded-lg text-[9px] font-black shadow-md uppercase">📊 EXCEL</button>
+                <button id="btn_excel" onclick="generarExcel()" class="hidden bg-emerald-600 text-white px-4 py-2 rounded-lg text-[9px] font-black shadow-md uppercase hover:bg-emerald-700">📊 EXCEL</button>
             </div>
         </div>
 
@@ -51,6 +51,21 @@
                 <div class="bg-white p-3 rounded-xl border shadow-sm text-center"><p class="text-[8px] font-bold text-red-500 uppercase italic">Inactivos</p><p id="k_inact" class="text-base font-black text-red-600">0</p></div>
             </div>
 
+            <div id="alerta_panel" class="hidden bg-white border border-red-100 rounded-xl mb-6 overflow-hidden shadow-sm">
+                <div class="bg-red-600 p-3 flex flex-col md:flex-row justify-between items-center gap-2">
+                    <span class="text-white text-[10px] font-black uppercase tracking-widest">⚠️ ALERTAS DE INACTIVIDAD</span>
+                    <input type="text" id="search_user" placeholder="BUSCAR EJECUTIVO..." class="bg-white/20 text-white placeholder-white/60 text-[10px] px-3 py-2 rounded-lg border border-white/30 outline-none focus:bg-white focus:text-slate-900 w-full md:w-64 uppercase font-bold">
+                </div>
+                <div class="max-h-60 overflow-y-auto">
+                    <table class="w-full text-[9px] text-left">
+                        <thead class="sticky-thead font-bold uppercase text-slate-500">
+                            <tr><th class="p-2">Ejecutivo</th><th class="p-2 text-center">Inact.</th><th class="p-2">Cnx Total</th><th class="p-2">Gerencia</th></tr>
+                        </thead>
+                        <tbody id="t_body_alerts" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="space-y-4 mb-6">
                 <div class="bg-white p-2 md:p-4 rounded-xl shadow-md border"><div id="g_weekly" style="height: 350px;"></div></div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -59,9 +74,9 @@
                 </div>
             </div>
 
-            <div class="bg-slate-900 p-4 rounded-xl flex flex-col items-center gap-2 mb-6 shadow-xl">
-                <p class="text-white text-[8px] font-bold opacity-40 uppercase">Filtrar Calendario por Gerencia</p>
-                <select id="filter_ger" class="bg-white text-slate-800 text-[10px] font-black p-3 rounded-xl w-full max-w-md outline-none"></select>
+            <div class="bg-slate-900 p-4 rounded-xl flex flex-col items-center gap-2 mb-6 shadow-xl text-center">
+                <p class="text-white text-[8px] font-bold opacity-40 uppercase">Filtrar Calendario Detallado</p>
+                <select id="filter_ger" class="bg-white text-slate-800 text-[10px] font-black p-3 rounded-xl w-full max-w-md outline-none cursor-pointer"></select>
             </div>
 
             <div id="detail_sections" class="hidden">
@@ -80,7 +95,7 @@
             fetch('data.csv') 
                 .then(res => { if(!res.ok) throw new Error(); return res.text(); })
                 .then(csv => { procesarCSV(csv); })
-                .catch(() => { console.error("data.csv no hallado"); });
+                .catch(() => { alert("Error: No se encontró el archivo data.csv"); });
         }
 
         document.getElementById('form_acceso').onsubmit = e => {
@@ -116,7 +131,7 @@
             });
 
             const ms = document.getElementById('filter_month');
-            ms.innerHTML = '<option value="ALL">TOTAL PERIODO</option>';
+            ms.innerHTML = '<option value="ALL">PERIODO TOTAL</option>';
             Object.keys(monthsFound).sort().forEach(m => ms.innerHTML += `<option value="${m}">${monthsFound[m].name}</option>`);
 
             rawDataFRows = []; groupedData = {}; let caps = new Set();
@@ -133,7 +148,7 @@
                 groupedData[name].systems[sis] = { daily };
             });
 
-            document.getElementById('filter_camp').innerHTML = '<option value="">CAMPAÑAS</option>' + [...caps].sort().map(x => `<option value="${x}">${x}</option>`).join('');
+            document.getElementById('filter_camp').innerHTML = '<option value="">TODAS LAS CAMPAÑAS</option>' + [...caps].sort().map(x => `<option value="${x}">${x}</option>`).join('');
             const gers = [...new Set(rawDataFRows.map(d => d.ger))].sort();
             document.getElementById('filter_ger').innerHTML = '<option value="">-- SELECCIONAR GERENCIA --</option>' + gers.map(g => `<option value="${g}">${g}</option>`).join('');
             document.getElementById('main_content').classList.remove('hidden');
@@ -145,7 +160,7 @@
             const mKey = document.getElementById('filter_month').value;
             const ws = document.getElementById('filter_week');
             let baseDates = mKey === "ALL" ? globalDates : (monthsFound[mKey]?.indices || []);
-            ws.innerHTML = '<option value="ALL">MENSUAL</option>';
+            ws.innerHTML = '<option value="ALL">VISTA MENSUAL</option>';
             for(let i=0; i < Math.ceil(baseDates.length/7); i++) ws.innerHTML += `<option value="${i}">SEM ${i+1}</option>`;
             renderDashboard(); 
         }
@@ -155,10 +170,12 @@
             const camp = document.getElementById('filter_camp').value;
             const m = document.getElementById('filter_month').value;
             const w = document.getElementById('filter_week').value;
+            const query = document.getElementById('search_user').value.toUpperCase();
+
             let rango = m === "ALL" ? globalDates.map((_,i)=>i) : (monthsFound[m]?.indices || []);
             if(w !== "ALL") rango = rango.slice(parseInt(w)*7, (parseInt(w)+1)*7);
 
-            let s_spr = 0, s_vic = 0, s_total = 0, sprV = [], vicV = [], labels = [];
+            let s_spr = 0, s_vic = 0, sprV = [], vicV = [], labels = [];
             const campMap = {};
             let filtered = rawDataFRows.filter(r => (!ger || r.ger === ger) && (!camp || r.camp === camp));
 
@@ -169,57 +186,70 @@
                     const s = tToSec(r.daily[idx]);
                     if(r.sis.includes('SPRINKLR')) dS += s; else dV += s;
                     if(s > 0) {
-                        if(!campMap[r.camp]) campMap[r.camp] = { s: 0 };
+                        if(!campMap[r.camp]) campMap[r.camp] = { s: 0, sis: r.sis };
                         campMap[r.camp].s += s;
                     }
                 });
-                s_spr += dS; s_vic += dV; s_total += (dS + dV);
+                s_spr += dS; s_vic += dV;
                 sprV.push((dS/3600).toFixed(1)); vicV.push((dV/3600).toFixed(1));
             });
 
             document.getElementById('k_spr').innerText = (s_spr/3600).toFixed(1) + "h";
             document.getElementById('k_vic').innerText = (s_vic/3600).toFixed(1) + "h";
-            document.getElementById('k_tot').innerText = (s_total/3600).toFixed(1) + "h";
+            document.getElementById('k_tot').innerText = ((s_spr + s_vic)/3600).toFixed(1) + "h";
 
             const layoutBase = { 
-                margin: {t:40, b:40, l:40, r:20}, 
-                autosize: true, 
-                font: { size: 9, family: 'sans-serif' },
-                hovermode: false,
-                xaxis: { fixedrange: true },
-                yaxis: { fixedrange: true },
+                margin: {t:40, b:40, l:40, r:20}, autosize: true, font: { size: 9 },
+                hovermode: false, xaxis: { fixedrange: true }, yaxis: { fixedrange: true },
                 legend: { orientation: 'h', y: -0.2, itemclick: false, itemdoubleclick: false }
             };
 
             const config = { responsive: true, displayModeBar: false };
 
-            // GRÁFICA SEMANAL CON ETIQUETAS
+            // Gráfica de Líneas
             Plotly.newPlot('g_weekly', [
                 { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb'} },
                 { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316'} }
-            ], { ...layoutBase, title: 'DETALLE DIARIO (HORAS)' }, config);
+            ], { ...layoutBase, title: 'TENDENCIA (HORAS)' }, config);
 
-            // GRÁFICA DE PIE CON ETIQUETAS
+            // Gráfica de Pay
             Plotly.newPlot('g_pie', [{
                 labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', hole: 0.3,
-                textinfo: 'label+percent', textposition: 'inside',
-                marker: { colors: ['#2563eb', '#f97316'] }
-            }], { ...layoutBase, title: 'BALANCE SISTEMAS' }, config);
+                textinfo: 'label+percent', marker: { colors: ['#2563eb', '#f97316'] }
+            }], { ...layoutBase, title: 'MIX DE SISTEMAS' }, config);
 
-            // GRÁFICA DE BARRAS CON ETIQUETAS
-            const sortedC = Object.keys(campMap).map(k => ({n: k, s: (campMap[k].s/3600).toFixed(1)})).sort((a,b) => a.s - b.s).slice(-8);
+            // Gráfica de Barras (RESTAURADA)
+            const sortedC = Object.keys(campMap).map(k => ({n: k, s: (campMap[k].s/3600).toFixed(1), sis: campMap[k].sis})).sort((a,b) => a.s - b.s).slice(-10);
             Plotly.newPlot('g_bar', [{
                 x: sortedC.map(x => x.s), y: sortedC.map(x => x.n), type: 'bar', orientation: 'h',
                 text: sortedC.map(x => x.s + 'h'), textposition: 'auto',
-                marker: { color: '#2563eb' }
-            }], { ...layoutBase, title: 'TOP CAMPAÑAS', margin: { l: 90 } }, config);
+                marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') }
+            }], { ...layoutBase, title: 'TOP CAMPAÑAS', margin: { l: 120 } }, config);
 
-            if(ger) renderCalendar(ger, rango);
+            renderAlerts(rango, query);
+            if(ger) renderCalendar(ger, rango, query);
         }
 
-        function renderCalendar(ger, rango) {
+        function renderAlerts(rango, query) {
+            const ger = document.getElementById('filter_ger').value, camp = document.getElementById('filter_camp').value;
+            const alerts = Object.values(groupedData).map(u => {
+                let totalSec = 0, dAct = 0;
+                rango.forEach(idx => {
+                    let dCnx = 0; Object.values(u.systems).forEach(s => dCnx += tToSec(s.daily[idx]));
+                    if(dCnx > 0) dAct++; totalSec += dCnx;
+                });
+                return { ...u, totalSec, dInact: rango.length - dAct };
+            }).filter(x => x.totalSec > 0 && x.dInact >= 2 && (!ger || x.ger === ger) && (!camp || x.camp === camp) && x.name.toUpperCase().includes(query));
+            
+            document.getElementById('k_inact').innerText = alerts.length;
+            document.getElementById('alerta_panel').classList.toggle('hidden', alerts.length === 0 && query === "");
+            document.getElementById('t_body_alerts').innerHTML = alerts.sort((a,b)=>b.dInact - a.dInact).map(i => `
+                <tr class="hover:bg-slate-50"><td class="p-2 font-bold uppercase">${i.name}</td><td class="p-2 text-center text-red-600 font-black bg-red-50">${i.dInact}D</td><td class="p-2 font-bold">${(i.totalSec/3600).toFixed(1)}h</td><td class="p-2 uppercase text-slate-500">${i.ger}</td></tr>`).join('');
+        }
+
+        function renderCalendar(ger, rango, query) {
             let h = ""; const camp = document.getElementById('filter_camp').value;
-            const f = Object.values(groupedData).filter(d => d.ger === ger && (!camp || d.camp === camp)).sort((a,b)=>a.name.localeCompare(b.name));
+            const f = Object.values(groupedData).filter(d => d.ger === ger && d.name.toUpperCase().includes(query) && (!camp || d.camp === camp)).sort((a,b)=>a.name.localeCompare(b.name));
             f.forEach(d => {
                 h += `<tr class="bg-slate-800 text-white font-bold"><td colspan="2" class="p-2 text-[8px] uppercase">${d.name}</td></tr>`;
                 Object.keys(d.systems).forEach(s => {
@@ -231,10 +261,31 @@
             document.getElementById('detail_sections').classList.remove('hidden');
         }
 
+        // Eventos
+        document.getElementById('search_user').addEventListener('input', () => renderDashboard());
         document.getElementById('filter_camp').onchange = () => renderDashboard();
         document.getElementById('filter_month').onchange = () => actualizarSemanas();
         document.getElementById('filter_week').onchange = () => renderDashboard();
-        document.getElementById('filter_ger').onchange = (e) => { renderDashboard(); if(!e.target.value) document.getElementById('detail_sections').classList.add('hidden'); };
+        document.getElementById('filter_ger').onchange = (e) => { 
+            renderDashboard(); 
+            if(!e.target.value) document.getElementById('detail_sections').classList.add('hidden'); 
+        };
+
+        function generarExcel() {
+            const ger = document.getElementById('filter_ger').value, camp = document.getElementById('filter_camp').value;
+            const data = Object.values(groupedData).map(u => {
+                let sec = 0, act = 0;
+                globalDates.forEach((_,i) => {
+                    let cnx = 0; Object.values(u.systems).forEach(sys => cnx += tToSec(sys.daily[i]));
+                    if(cnx > 0) act++; sec += cnx;
+                });
+                return { "EJECUTIVO": u.name, "GERENCIA": u.ger, "CAMPAÑA": u.camp, "TOTAL_HORAS": (sec/3600).toFixed(2), "DIAS_ACT": act };
+            }).filter(x => (!ger || x.GERENCIA === ger) && (!camp || x.CAMPAÑA === camp));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+            XLSX.writeFile(wb, `GMT_CONTROL.xlsx`);
+        }
 
         window.addEventListener('resize', () => { Plotly.Plots.resize('g_weekly'); Plotly.Plots.resize('g_bar'); Plotly.Plots.resize('g_pie'); });
     </script>
