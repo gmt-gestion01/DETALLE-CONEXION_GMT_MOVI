@@ -19,7 +19,7 @@
 <body class="bg-slate-50 font-sans text-slate-800">
 
     <div id="login_layer">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-sm text-center border-t-4 border-blue-600">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center border-t-4 border-blue-600">
             <h2 class="text-2xl font-black mb-2 uppercase tracking-tighter">GMT SISTEMA</h2>
             <form id="form_acceso" class="space-y-4">
                 <input type="text" id="user_name" placeholder="USUARIO" required class="w-full p-4 border-2 rounded-xl text-center font-bold outline-none focus:border-blue-500">
@@ -139,7 +139,7 @@
             const headers = lines[0].split(separator);
             globalDates = headers.slice(9).map(d => d ? d.trim().replace(/['"]+/g, '') : "N/D");
             
-            // ACTUALIZACIÓN DE ÚLTIMA CARGA
+            // Lógica de "Última Carga"
             document.getElementById('data_status').innerText = globalDates[globalDates.length - 1];
 
             monthsFound = {};
