@@ -19,7 +19,7 @@
 <body class="bg-slate-50 font-sans text-slate-800">
 
     <div id="login_layer">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center border-t-4 border-blue-600">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-sm text-center border-t-4 border-blue-600">
             <h2 class="text-2xl font-black mb-2 uppercase tracking-tighter">GMT SISTEMA</h2>
             <form id="form_acceso" class="space-y-4">
                 <input type="text" id="user_name" placeholder="USUARIO" required class="w-full p-4 border-2 rounded-xl text-center font-bold outline-none focus:border-blue-500">
@@ -55,7 +55,7 @@
                 <div><p class="text-[8px] opacity-60 uppercase font-bold">Acumulado</p><p id="acum_sem" class="text-sm font-black text-orange-400">0h</p></div>
                 <div><p class="text-[8px] opacity-60 uppercase font-bold">Días</p><p id="acum_dias" class="text-sm font-black text-white">0</p></div>
                 <div><p class="text-[8px] opacity-60 uppercase font-bold">Promedio</p><p id="acum_prom" class="text-sm font-black text-emerald-400">0h</p></div>
-                <div><p class="text-[8px] opacity-60 uppercase font-bold">Status</p><p id="data_status" class="text-sm font-black text-blue-400">CARGANDO...</p></div>
+                <div><p class="text-[8px] opacity-60 uppercase font-bold">Última Carga</p><p id="data_status" class="text-sm font-black text-blue-400">---</p></div>
             </div>
 
             <div id="alerta_panel" class="hidden bg-white border border-red-200 rounded-xl mb-6 overflow-hidden shadow-sm">
@@ -101,9 +101,9 @@
         function cargarDataAutomaticamente() {
             fetch('data.csv') 
                 .then(res => { if(!res.ok) throw new Error(); return res.text(); })
-                .then(csv => { procesarCSV(csv); document.getElementById('data_status').innerText = "ONLINE (GITHUB)"; })
+                .then(csv => { procesarCSV(csv); })
                 .catch(() => { 
-                    document.getElementById('data_status').innerText = "DATA NO HALLADA"; 
+                    document.getElementById('data_status').innerText = "ERROR CSV"; 
                     document.getElementById('data_status').style.color = "#f87171";
                 });
         }
@@ -139,6 +139,9 @@
             const headers = lines[0].split(separator);
             globalDates = headers.slice(9).map(d => d ? d.trim().replace(/['"]+/g, '') : "N/D");
             
+            // ACTUALIZACIÓN DE ÚLTIMA CARGA
+            document.getElementById('data_status').innerText = globalDates[globalDates.length - 1];
+
             monthsFound = {};
             globalDates.forEach((d, idx) => {
                 const parts = d.split('/');
@@ -203,7 +206,6 @@
                 filtered.forEach(r => {
                     const s = tToSec(r.daily[idx]);
                     if(r.sis.includes('SPRINKLR')) dS += s; else dV += s;
-                    
                     if(s > 0) {
                         if(!campMap[r.camp]) campMap[r.camp] = { s: 0, sis: r.sis };
                         campMap[r.camp].s += s;
@@ -244,13 +246,8 @@
                 marker: { colors: ['#2563eb', '#f97316'] }
             }], { ...layoutBase, title: 'MIX SISTEMAS' }, config);
 
-            // G_BAR - CORRECCIÓN DE ETIQUETAS Y ESPACIADO
             const sortedC = Object.keys(campMap)
-                .map(k => ({
-                    n: k, 
-                    s: parseFloat((campMap[k].s/3600).toFixed(1)), 
-                    sis: campMap[k].sis
-                }))
+                .map(k => ({ n: k, s: parseFloat((campMap[k].s/3600).toFixed(1)), sis: campMap[k].sis }))
                 .filter(x => x.s > 0)
                 .sort((a,b) => a.s - b.s)
                 .slice(-10);
@@ -264,18 +261,12 @@
                 texttemplate: '%{text}', 
                 textposition: 'outside', 
                 cliponaxis: false,
-                marker: { 
-                    color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') 
-                }
+                marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') }
             }], { 
                 ...layoutBase, 
                 title: 'TOP 10 CAMPAÑAS (HORAS)', 
                 margin: { l: 180, r: 100, t: 50, b: 50 }, 
-                xaxis: { 
-                    showgrid: false, 
-                    zeroline: false,
-                    range: [0, Math.max(...sortedC.map(x => x.s), 1) * 1.3] 
-                },
+                xaxis: { showgrid: false, zeroline: false, range: [0, Math.max(...sortedC.map(x => x.s), 1) * 1.3] },
                 yaxis: { automargin: true }
             }, config);
 
