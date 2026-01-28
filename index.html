@@ -186,15 +186,16 @@
 
         function renderDashboard() {
             const ger = document.getElementById('filter_ger').value;
-            const camp = document.getElementById('filter_camp').value;
+            const camp_f = document.getElementById('filter_camp').value;
             const m = document.getElementById('filter_month').value;
             const w = document.getElementById('filter_week').value;
             let rango = m === "ALL" ? globalDates.map((_,i)=>i) : (monthsFound[m]?.indices || []);
             if(w !== "ALL") rango = rango.slice(parseInt(w)*7, (parseInt(w)+1)*7);
 
             let s_spr = 0, s_vic = 0, s_total = 0, sprV = [], vicV = [], labels = [];
-            const campMap = {}; // Diccionario para acumular por campaña
-            let filtered = rawDataFRows.filter(r => (!ger || r.ger === ger) && (!camp || r.camp === camp));
+            let campMap = {}; 
+
+            let filtered = rawDataFRows.filter(r => (!ger || r.ger === ger) && (!camp_f || r.camp === camp_f));
 
             rango.forEach(idx => {
                 labels.push(globalDates[idx].substring(0,5));
@@ -203,7 +204,6 @@
                     const s = tToSec(r.daily[idx]);
                     if(r.sis.includes('SPRINKLR')) dS += s; else dV += s;
                     
-                    // Cálculo de campaña para el gráfico de barras
                     if(s > 0) {
                         if(!campMap[r.camp]) campMap[r.camp] = { s: 0, sis: r.sis };
                         campMap[r.camp].s += s;
@@ -233,27 +233,25 @@
 
             const config = { responsive: true, displayModeBar: false };
 
-            // G_WEEKLY
             Plotly.newPlot('g_weekly', [
                 { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb', width: 3} },
                 { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316', width: 3} }
             ], { ...layoutBase, title: 'EVOLUCIÓN DIARIA (HORAS)' }, config);
 
-            // G_PIE
             Plotly.newPlot('g_pie', [{
                 labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', hole: 0.4,
                 textinfo: 'label+percent', textposition: 'inside',
                 marker: { colors: ['#2563eb', '#f97316'] }
             }], { ...layoutBase, title: 'MIX SISTEMAS' }, config);
 
-            // G_BAR - CORREGIDO CÁLCULO Y ETIQUETAS
+            // G_BAR - CORRECCIÓN DE CÁLCULO Y ETIQUETAS FORZADAS
             const sortedC = Object.keys(campMap)
                 .map(k => ({
                     n: k, 
                     s: parseFloat((campMap[k].s/3600).toFixed(1)), 
                     sis: campMap[k].sis
                 }))
-                .filter(item => item.s > 0)
+                .filter(x => x.s > 0)
                 .sort((a,b) => a.s - b.s)
                 .slice(-10);
 
@@ -262,15 +260,18 @@
                 y: sortedC.map(x => x.n), 
                 type: 'bar', 
                 orientation: 'h',
-                text: sortedC.map(x => x.s + 'h'), // Etiqueta con valor
-                textposition: 'auto',              // Posición automática
+                text: sortedC.map(x => x.s + 'h'),
+                texttemplate: '%{text}', 
+                textposition: 'auto',
+                insidetextanchor: 'end',
                 marker: { 
                     color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') 
                 }
             }], { 
                 ...layoutBase, 
                 title: 'TOP 10 CAMPAÑAS (HORAS)', 
-                margin: { l: 150, r: 50, t: 50, b: 50 } 
+                margin: { l: 160, r: 60, t: 50, b: 50 },
+                xaxis: { showgrid: false, zeroline: false }
             }, config);
 
             renderAlerts(rango);
