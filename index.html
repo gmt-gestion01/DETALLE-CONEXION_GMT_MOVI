@@ -216,7 +216,7 @@
             document.getElementById('k_tot').innerText = secToT(s_total);
             document.getElementById('acum_sem').innerText = (s_total/3600).toFixed(1) + "h";
             document.getElementById('acum_dias').innerText = rango.length;
-            document.getElementById('acum_prom').innerText = ((s_total/3600)/(rango.length || 1)).toFixed(1) + "h/d";
+            document.getElementById('acum_prom').innerText = ((s_total/3600)/(rango.length || 1)).toFixed(1) + "h";
 
             const layoutBase = { 
                 margin: {t:40, b:40, l:40, r:20}, 
@@ -231,26 +231,42 @@
 
             const config = { responsive: true, displayModeBar: false };
 
-            // G_WEEKLY con etiquetas fijas y escala bloqueada
+            // G_WEEKLY
             Plotly.newPlot('g_weekly', [
                 { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb', width: 3} },
                 { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316', width: 3} }
             ], { ...layoutBase, title: 'EVOLUCIÓN DIARIA (HORAS)' }, config);
 
-            // G_PIE con etiquetas fijas
+            // G_PIE
             Plotly.newPlot('g_pie', [{
                 labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', hole: 0.4,
                 textinfo: 'label+percent', textposition: 'inside',
                 marker: { colors: ['#2563eb', '#f97316'] }
             }], { ...layoutBase, title: 'MIX SISTEMAS' }, config);
 
-            // G_BAR con etiquetas fijas y escala bloqueada
-            const sortedC = Object.keys(campMap).map(k => ({n: k, s: (campMap[k].s/3600).toFixed(1), sis: campMap[k].sis})).sort((a,b) => a.s - b.s).slice(-10);
+            // G_BAR - MEJORADO CON ETIQUETAS
+            const sortedC = Object.keys(campMap).map(k => ({
+                n: k, 
+                s: parseFloat((campMap[k].s/3600).toFixed(1)), 
+                sis: campMap[k].sis
+            })).sort((a,b) => a.s - b.s).slice(-10);
+
             Plotly.newPlot('g_bar', [{
-                x: sortedC.map(x => x.s), y: sortedC.map(x => x.n), type: 'bar', orientation: 'h',
-                text: sortedC.map(x => x.s + 'h'), textposition: 'auto',
-                marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') }
-            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS', margin: { l: 120 } }, config);
+                x: sortedC.map(x => x.s), 
+                y: sortedC.map(x => x.n), 
+                type: 'bar', 
+                orientation: 'h',
+                text: sortedC.map(x => x.s + 'h'),
+                textposition: 'auto',
+                cliponaxis: false,
+                marker: { 
+                    color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') 
+                }
+            }], { 
+                ...layoutBase, 
+                title: 'TOP 10 CAMPAÑAS', 
+                margin: { l: 140, r: 40, t: 50, b: 40 } 
+            }, config);
 
             renderAlerts(rango);
             if(ger) renderCalendar(ger, rango);
