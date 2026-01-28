@@ -13,7 +13,6 @@
         .vic-high { background-color: #f97316; color: white; }
         .day-off { background-color: #ffffff; color: #cbd5e1; border: 1px solid #e2e8f0; }
         #login_layer { position: fixed; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .sticky-thead th { position: sticky; top: 0; background-color: #f8fafc; z-index: 10; border-bottom: 2px solid #e2e8f0; }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-800">
@@ -51,6 +50,26 @@
                 <div class="bg-white p-4 rounded-xl border shadow-sm text-center md:text-left"><p class="text-[9px] font-bold text-red-500 uppercase italic">Críticos</p><p id="k_inact" class="text-lg font-black text-red-600">0</p></div>
             </div>
 
+            <div id="alerta_panel" class="hidden bg-white border border-red-200 rounded-xl mb-6 overflow-hidden shadow-md">
+                <div class="bg-red-600 p-3 flex justify-between items-center">
+                    <span class="text-white text-[10px] font-black">⚠️ ALERTAS DE INACTIVIDAD</span>
+                    <input type="text" id="search_user" placeholder="BUSCAR ASESOR..." class="bg-white/20 text-white text-[9px] px-3 py-1 rounded-lg outline-none w-48 uppercase font-bold placeholder-white/60">
+                </div>
+                <div class="max-h-60 overflow-y-auto">
+                    <table class="w-full text-[10px] text-left">
+                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold sticky top-0">
+                            <tr>
+                                <th class="p-2">Ejecutivo</th>
+                                <th class="p-2">Días Inactivos</th>
+                                <th class="p-2">Conexión Total</th>
+                                <th class="p-2">Gerencia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="t_body_alerts" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="bg-slate-800 text-white p-4 rounded-xl shadow-lg mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                 <div><p class="text-[8px] opacity-60 uppercase font-bold">Acumulado</p><p id="acum_sem" class="text-sm font-black text-orange-400">0h</p></div>
                 <div><p class="text-[8px] opacity-60 uppercase font-bold">Días</p><p id="acum_dias" class="text-sm font-black text-white">0</p></div>
@@ -69,33 +88,15 @@
             <div class="bg-white p-6 rounded-xl shadow-md border mb-6">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b pb-4">
                     <h3 class="text-[11px] font-black text-slate-500 uppercase tracking-widest">📈 Staffing: Tendencia & Sistemas</h3>
-                    <div class="flex gap-2">
-                        <select id="staff_filter_sis" class="text-[9px] font-bold p-2 bg-slate-100 rounded-lg outline-none">
-                            <option value="ALL">TODOS LOS SISTEMAS</option>
-                            <option value="SPRINKLR">SPRINKLR (AZUL)</option>
-                            <option value="VICIDIAL">VICIDIAL (NARANJA)</option>
-                        </select>
-                    </div>
+                    <select id="staff_filter_sis" class="text-[9px] font-bold p-2 bg-slate-100 rounded-lg outline-none">
+                        <option value="ALL">TODOS LOS SISTEMAS</option>
+                        <option value="SPRINKLR">SPRINKLR (AZUL)</option>
+                        <option value="VICIDIAL">VICIDIAL (NARANJA)</option>
+                    </select>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div>
-                        <p class="text-[10px] font-bold text-center text-slate-400 mb-2 uppercase">Headcount por Semana y Sistema</p>
-                        <div id="g_staff_weeks" style="height: 350px;"></div>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-bold text-center text-slate-400 mb-2 uppercase">Tendencia de Ejecutivos por Campaña</p>
-                        <div id="g_staff_trend" style="height: 350px;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="alerta_panel" class="hidden bg-white border border-red-200 rounded-xl mb-6 overflow-hidden">
-                <div class="bg-red-600 p-3 flex justify-between items-center">
-                    <span class="text-white text-[10px] font-black">⚠️ ALERTAS DE INACTIVIDAD</span>
-                    <input type="text" id="search_user" placeholder="BUSCAR..." class="bg-white/20 text-white text-[9px] px-3 py-1 rounded-lg outline-none w-48 uppercase font-bold">
-                </div>
-                <div class="max-h-60 overflow-y-auto">
-                    <table class="w-full text-[10px] text-left"><tbody id="t_body_alerts" class="divide-y divide-slate-100"></tbody></table>
+                    <div id="g_staff_weeks" style="height: 350px;"></div>
+                    <div id="g_staff_trend" style="height: 350px;"></div>
                 </div>
             </div>
 
@@ -117,7 +118,7 @@
         let rawDataFRows = [], globalDates = [], groupedData = {}, monthsFound = {};
 
         function cargarDataAutomaticamente() {
-            fetch('data.csv').then(res => res.text()).then(csv => procesarCSV(csv));
+            fetch('data.csv').then(res => res.text()).then(csv => procesarCSV(csv)).catch(err => console.error("Error cargando CSV:", err));
         }
 
         document.getElementById('form_acceso').onsubmit = e => {
@@ -237,13 +238,13 @@
                 xaxis: { fixedrange: true }, yaxis: { fixedrange: true }
             };
 
-            // GRÁFICO 1: EVOLUCIÓN CON ETIQUETAS
+            // EVOLUCIÓN
             Plotly.newPlot('g_weekly', [
                 { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb'} },
                 { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316'} }
             ], { ...layoutBase, title: 'AUDITORÍA DE HORAS POR SISTEMA' });
 
-            // GRÁFICO 2: TOP CAMPAÑAS CON LÓGICA DE POSICIÓN DINÁMICA
+            // TOP CAMPAÑAS (FIXED)
             const sortedC = Object.keys(campMap).map(k => ({ n: k, s: parseFloat((campMap[k].s/3600).toFixed(1)), sis: campMap[k].sis })).sort((a,b) => a.s - b.s).slice(-10);
             const maxVal = Math.max(...sortedC.map(x => x.s), 1);
             
@@ -251,62 +252,38 @@
                 x: sortedC.map(x => x.s), y: sortedC.map(x => x.n), type: 'bar', orientation: 'h',
                 marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') },
                 text: sortedC.map(x => x.s + 'h'),
-                textposition: sortedC.map(x => (x.s / maxVal) < 0.25 ? 'outside' : 'inside'),
-                textfont: { color: sortedC.map(x => (x.s / maxVal) < 0.25 ? '#475569' : '#ffffff'), size: 10, weight: 800 },
+                textposition: sortedC.map(x => (x.s / maxVal) < 0.3 ? 'outside' : 'inside'),
+                textfont: { color: sortedC.map(x => (x.s / maxVal) < 0.3 ? '#1e293b' : '#ffffff'), size: 10, weight: 800 },
                 cliponaxis: false
-            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS)', margin: { l: 150, r: 60 } });
+            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS)', margin: { l: 150, r: 80, t:40, b:40 } });
 
-            // GRÁFICO 3: PIE CON ETIQUETAS DETALLADAS
+            // PIE
             Plotly.newPlot('g_pie', [{ 
-                labels: ['Sprinklr', 'Vicidial'], 
-                values: [s_spr, s_vic], 
-                type: 'pie', 
-                textinfo: 'label+percent+value',
-                texttemplate: '%{label}<br>%{percent}<br>%{value}s',
-                marker: { colors: ['#2563eb', '#f97316'] },
-                hole: 0.3
+                labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', 
+                textinfo: 'label+percent', marker: { colors: ['#2563eb', '#f97316'] }, hole: 0.3
             }], { ...layoutBase, title: 'DISTRIBUCIÓN SISTEMAS' });
 
-            // --- SECCIÓN STAFFING ---
+            // STAFFING
             let weekRanges = [];
             for(let i=0; i<rango.length; i+=7) weekRanges.push(rango.slice(i, i+7));
-            let staffSpr = [], staffVic = [], staffLabels = [], trendData = {};
-
+            let staffSpr = [], staffVic = [], staffLabels = [];
             weekRanges.forEach((wRange, i) => {
                 staffLabels.push(`Sem ${i+1}`);
                 let uSpr = new Set(), uVic = new Set();
                 wRange.forEach(idx => {
                     filtered.forEach(r => {
                         if(tToSec(r.daily[idx]) > 0) {
-                            if(r.sis.includes('SPRINKLR')) uSpr.add(r.name);
-                            else uVic.add(r.name);
-                            if(!trendData[r.camp]) trendData[r.camp] = new Array(weekRanges.length).fill(0);
+                            if(r.sis.includes('SPRINKLR')) uSpr.add(r.name); else uVic.add(r.name);
                         }
                     });
                 });
                 staffSpr.push(uSpr.size); staffVic.push(uVic.size);
-                
-                // Cálculo de tendencia
-                Object.keys(trendData).forEach(cName => {
-                    let cUsers = new Set();
-                    wRange.forEach(idxW => {
-                        rawDataFRows.filter(row => row.camp === cName).forEach(row => {
-                            if(tToSec(row.daily[idxW]) > 0) cUsers.add(row.name);
-                        });
-                    });
-                    trendData[cName][i] = cUsers.size;
-                });
             });
 
             let staffTraces = [];
             if(sis_f === "ALL" || sis_f === "SPRINKLR") staffTraces.push({ x: staffLabels, y: staffSpr, name: 'Sprinklr', type: 'bar', marker: {color: '#2563eb'}, text: staffSpr, textposition: 'auto' });
             if(sis_f === "ALL" || sis_f === "VICIDIAL") staffTraces.push({ x: staffLabels, y: staffVic, name: 'Vicidial', type: 'bar', marker: {color: '#f97316'}, text: staffVic, textposition: 'auto' });
-            Plotly.newPlot('g_staff_weeks', staffTraces, { ...layoutBase, barmode: 'group' });
-
-            let trendTraces = Object.keys(trendData).slice(0, 5).map(c => ({
-                x: staffLabels, y: trendData[c], name: c, type: 'scatter', mode: 'lines+markers+text', text: trendData[c], textposition: 'top center'
-            }));
-            Plotly.newPlot('g_staff_trend', trendTraces, layoutBase);
+            Plotly.newPlot('g_staff_weeks', staffTraces, { ...layoutBase, title: 'STAFF POR SISTEMA', barmode: 'group' });
 
             renderAlerts(rango);
             if(ger_f) renderCalendar(ger_f, rango);
@@ -326,7 +303,13 @@
             const alerts = userMetrics.filter(x => x.s > 0 && x.inact >= 2 && (!ger || x.ger === ger) && x.name.toUpperCase().includes(query));
             document.getElementById('k_inact').innerText = alerts.length;
             document.getElementById('alerta_panel').classList.toggle('hidden', alerts.length === 0 && query === "");
-            document.getElementById('t_body_alerts').innerHTML = alerts.map(i => `<tr class="hover:bg-slate-50"><td class="p-2 font-bold uppercase">${i.name}</td><td class="p-2 text-red-600 font-black">${i.inact}D INACT.</td><td class="p-2 font-bold">${secToT(i.s)}</td><td class="p-2 uppercase text-slate-400">${i.ger}</td></tr>`).join('');
+            document.getElementById('t_body_alerts').innerHTML = alerts.map(i => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-2 font-bold uppercase text-slate-700">${i.name}</td>
+                    <td class="p-2 text-red-600 font-black">${i.inact} DÍAS</td>
+                    <td class="p-2 font-bold text-slate-500">${secToT(i.s)}</td>
+                    <td class="p-2 uppercase text-slate-400 font-medium">${i.ger}</td>
+                </tr>`).join('');
         }
 
         function renderCalendar(ger, rango) {
