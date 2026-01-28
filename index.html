@@ -32,7 +32,7 @@
         <div class="bg-white p-6 rounded-xl shadow-sm border mb-6 flex flex-col lg:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-xl font-black uppercase text-slate-900">GMT CONTROL | <span class="text-blue-600">AUDITORÍA</span></h1>
-                <p class="text-[10px] font-bold text-slate-400 uppercase italic text-center lg:text-left">Visualización de Operaciones 2026</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase italic">Visualización Operativa 2026</p>
             </div>
             <div class="flex flex-wrap justify-center gap-3">
                 <select id="filter_camp" class="bg-emerald-50 text-emerald-700 text-[10px] font-black px-4 py-2 rounded-lg border border-emerald-100 outline-none cursor-pointer"></select>
@@ -46,13 +46,13 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div class="bg-white p-4 rounded-xl border shadow-sm text-center md:text-left"><p class="text-[9px] font-bold text-slate-400 uppercase">Sprinklr</p><p id="k_spr" class="text-lg font-black text-blue-600">0:00:00</p></div>
                 <div class="bg-white p-4 rounded-xl border shadow-sm text-center md:text-left"><p class="text-[9px] font-bold text-slate-400 uppercase">Vicidial</p><p id="k_vic" class="text-lg font-black text-orange-600">0:00:00</p></div>
-                <div class="bg-white p-4 rounded-xl border shadow-sm text-center md:text-left"><p class="text-[9px] font-bold text-slate-400 uppercase">Total Periodo</p><p id="k_tot" class="text-lg font-black text-slate-800">0:00:00</p></div>
-                <div class="bg-white p-4 rounded-xl border shadow-sm text-center md:text-left"><p class="text-[9px] font-bold text-red-500 uppercase italic">Alertas Staff</p><p id="k_inact" class="text-lg font-black text-red-600">0</p></div>
+                <div class="bg-white p-4 rounded-xl border shadow-sm text-center md:text-left"><p class="text-[9px] font-bold text-slate-400 uppercase">Total</p><p id="k_tot" class="text-lg font-black text-slate-800">0:00:00</p></div>
+                <div class="bg-white p-4 rounded-xl border shadow-sm text-center md:text-left"><p class="text-[9px] font-bold text-red-500 uppercase italic">Alertas</p><p id="k_inact" class="text-lg font-black text-red-600">0</p></div>
             </div>
 
             <div id="alerta_panel" class="hidden bg-white border border-red-200 rounded-xl mb-6 overflow-hidden shadow-lg">
                 <div class="bg-red-600 p-3 flex justify-between items-center">
-                    <span class="text-white text-[10px] font-black tracking-widest uppercase">⚠️ ALERTAS DE INACTIVIDAD DETECTADAS</span>
+                    <span class="text-white text-[10px] font-black tracking-widest uppercase">⚠️ ALERTAS DE INACTIVIDAD</span>
                     <input type="text" id="search_user" placeholder="BUSCAR ASESOR..." class="bg-white/20 text-white text-[9px] px-3 py-1 rounded-lg outline-none w-48 uppercase font-bold placeholder-white/70">
                 </div>
                 <div class="max-h-56 overflow-y-auto">
@@ -74,14 +74,14 @@
                 <div id="g_bar" style="height: 400px;"></div>
             </div>
 
-            <div class="bg-white p-4 rounded-xl shadow-md border mb-6">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-center">Mapa de Densidad: Staff por Semana</h3>
-                <div id="g_staff_heat" style="height: 320px;"></div>
+            <div class="bg-white p-6 rounded-xl shadow-md border mb-6">
+                <div id="g_weekly" style="height: 380px;"></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <div class="bg-white p-4 rounded-xl shadow-md border">
-                    <div id="g_weekly" style="height: 350px;"></div>
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-center">Densidad de Staff por Semana</h3>
+                    <div id="g_staff_heat" style="height: 350px;"></div>
                 </div>
                 <div class="bg-white p-4 rounded-xl shadow-md border">
                     <div id="g_pie" style="height: 350px;"></div>
@@ -117,7 +117,7 @@
                 document.getElementById('login_layer').style.display = 'none';
                 document.getElementById('dashboard_wrapper').classList.remove('hidden');
                 cargarDataAutomaticamente();
-            } else { alert("Acceso Incorrecto"); }
+            } else { alert("Error de acceso"); }
         };
 
         function tToSec(t) { 
@@ -154,17 +154,16 @@
 
             document.getElementById('filter_camp').innerHTML = '<option value="">TODAS LAS CAMPAÑAS</option>' + [...caps].sort().map(x => `<option value="${x}">${x}</option>`).join('');
             const gers = [...new Set(rawDataFRows.map(d => d.ger))].sort();
-            document.getElementById('filter_ger').innerHTML = '<option value="">-- SELECCIONAR GERENCIA --</option>' + gers.map(g => `<option value="${g}">${g}</option>`).join('');
-            document.getElementById('filter_month').innerHTML = '<option value="ALL">PERIODO COMPLETO</option><option value="01">ENERO 2026</option>';
+            document.getElementById('filter_ger').innerHTML = '<option value="">-- FILTRAR POR GERENCIA --</option>' + gers.map(g => `<option value="${g}">${g}</option>`).join('');
+            document.getElementById('filter_month').innerHTML = '<option value="ALL">PERIODO 2026</option>';
             document.getElementById('main_content').classList.remove('hidden');
-            document.getElementById('btn_excel').classList.remove('hidden');
             actualizarSemanas();
         }
 
         function actualizarSemanas() {
             const ws = document.getElementById('filter_week');
-            ws.innerHTML = '<option value="ALL">VISTA MENSUAL</option>';
-            for(let i=0; i < Math.ceil(globalDates.length/7); i++) ws.innerHTML += `<option value="${i}">SEM ${i+1}</option>`;
+            ws.innerHTML = '<option value="ALL">MES COMPLETO</option>';
+            for(let i=0; i < Math.ceil(globalDates.length/7); i++) ws.innerHTML += `<option value="${i}">SEMANA ${i+1}</option>`;
             renderDashboard();
         }
 
@@ -203,16 +202,22 @@
                 paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)'
             };
 
-            // TOP 10
+            // GRÁFICO 1: TOP 10
             const sortedC = Object.keys(campMap).map(k => ({ n: k, s: parseFloat((campMap[k].s/3600).toFixed(1)), sis: campMap[k].sis })).sort((a,b) => a.s - b.s).slice(-10);
             Plotly.newPlot('g_bar', [{
                 x: sortedC.map(x => x.s), y: sortedC.map(x => x.n), type: 'bar', orientation: 'h',
                 marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') },
                 text: sortedC.map(x => x.s + 'h'), textposition: 'auto'
-            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS)', margin: { l: 200 } });
+            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (TOTAL HORAS)', margin: { l: 200 } });
 
-            // HEATMAP STAFF (CON ETIQUETAS)
-            let campList = [...new Set(filtered.map(r => r.camp))].slice(0, 10);
+            // GRÁFICO 2: EVOLUCIÓN (ANCHA)
+            Plotly.newPlot('g_weekly', [
+                { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb'} },
+                { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316'} }
+            ], { ...layoutBase, title: 'EVOLUCIÓN DIARIA DE CONEXIÓN (HORAS)' });
+
+            // GRÁFICO 3: HEATMAP
+            let campList = [...new Set(filtered.map(r => r.camp))].slice(0, 8);
             let weekLabels = ["Sem 1", "Sem 2", "Sem 3", "Sem 4"];
             let heatZ = campList.map(c => {
                 return [0, 1, 2, 3].map(wIdx => {
@@ -222,23 +227,16 @@
                     return st.size;
                 });
             });
-
             Plotly.newPlot('g_staff_heat', [{
                 z: heatZ, x: weekLabels, y: campList, type: 'heatmap',
                 colorscale: 'Blues', text: heatZ, texttemplate: "%{text}", showscale: false
             }], { ...layoutBase, margin: { l: 180, t:20 } });
 
-            // EVOLUCIÓN
-            Plotly.newPlot('g_weekly', [
-                { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, line: {color: '#2563eb'} },
-                { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, line: {color: '#f97316'} }
-            ], { ...layoutBase, title: 'EVOLUCIÓN DIARIA (HRS)' });
-
-            // PIE
+            // GRÁFICO 4: PIE
             Plotly.newPlot('g_pie', [{ 
                 labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', 
                 marker: { colors: ['#2563eb', '#f97316'] }, hole: 0.4, textinfo: 'label+percent'
-            }], { ...layoutBase, title: 'DISTRIBUCIÓN SISTEMAS' });
+            }], { ...layoutBase, title: 'DISTRIBUCIÓN POR SISTEMA' });
 
             renderAlerts(rango);
             if(ger_f) renderCalendar(ger_f, rango);
@@ -290,7 +288,7 @@
         function generarExcel() {
             const data = rawDataFRows.map(r => ({ "SISTEMA": r.sis, "EJECUTIVO": r.name, "GERENCIA": r.ger, "CAMPAÑA": r.camp, "TOTAL": r.daily.reduce((a,b)=>a+tToSec(b),0) }));
             const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "GMT_REPORT"); XLSX.writeFile(wb, "GMT_AUDITORIA_2026.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "GMT_REPORT"); XLSX.writeFile(wb, "GMT_AUDITORIA.xlsx");
         }
     </script>
 </body>
