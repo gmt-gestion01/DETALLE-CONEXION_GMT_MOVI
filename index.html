@@ -255,25 +255,28 @@
                 .sort((a,b) => a.s - b.s)
                 .slice(-10);
 
-            Plotly.newPlot('g_bar', [{
-                x: sortedC.map(x => x.s), 
-                y: sortedC.map(x => x.n), 
-                type: 'bar', 
-                orientation: 'h',
-                text: sortedC.map(x => x.s + 'h'),
-                texttemplate: '%{text}', 
-                textposition: 'auto',
-                insidetextanchor: 'end',
-                marker: { 
-                    color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') 
-                }
-            }], { 
-                ...layoutBase, 
-                title: 'TOP 10 CAMPAÑAS (HORAS)', 
-                margin: { l: 160, r: 60, t: 50, b: 50 },
-                xaxis: { showgrid: false, zeroline: false }
-            }, config);
-
+           Plotly.newPlot('g_bar', [{
+    x: sortedC.map(x => x.s), 
+    y: sortedC.map(x => x.n), 
+    type: 'bar', 
+    orientation: 'h',
+    text: sortedC.map(x => x.s + 'h'),
+    texttemplate: '%{text}', 
+    textposition: 'outside',      // Mueve el texto fuera de la barra
+    cliponaxis: false,            // Evita que el texto se corte
+    marker: { 
+        color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') 
+    }
+}], { 
+    ...layoutBase, 
+    title: 'TOP 10 CAMPAÑAS (HORAS)', 
+    margin: { l: 160, r: 80, t: 50, b: 50 }, // Aumentamos margen derecho para las etiquetas
+    xaxis: { 
+        showgrid: false, 
+        zeroline: false,
+        range: [0, Math.max(...sortedC.map(x => x.s)) * 1.2] // Espacio extra a la derecha
+    }
+}, config);
             renderAlerts(rango);
             if(ger) renderCalendar(ger, rango);
         }
@@ -356,3 +359,4 @@
     </script>
 </body>
 </html>
+
