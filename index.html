@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GMT CONTROL | STAFFING & TENDENCIAS</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -223,7 +224,6 @@
                 sprV.push((dS/3600).toFixed(1)); vicV.push((dV/3600).toFixed(1));
             });
 
-            // KPIs
             document.getElementById('k_spr').innerText = secToT(s_spr);
             document.getElementById('k_vic').innerText = secToT(s_vic);
             document.getElementById('k_tot').innerText = secToT(s_spr + s_vic);
@@ -232,32 +232,44 @@
             document.getElementById('acum_prom').innerText = (((s_spr + s_vic)/3600)/(rango.length || 1)).toFixed(1) + "h";
 
             const layoutBase = { 
-                margin: {t:40, b:40, l:50, r:20}, font: { size: 9 },
+                margin: {t:40, b:40, l:50, r:20}, font: { size: 9, weight: 700 },
                 paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
                 xaxis: { fixedrange: true }, yaxis: { fixedrange: true }
             };
 
-            // GRÁFICO 1: EVOLUCIÓN (LÍNEAS)
+            // GRÁFICO 1: EVOLUCIÓN CON ETIQUETAS
             Plotly.newPlot('g_weekly', [
-                { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers', line: {color: '#2563eb'} },
-                { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers', line: {color: '#f97316'} }
+                { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb'} },
+                { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316'} }
             ], { ...layoutBase, title: 'AUDITORÍA DE HORAS POR SISTEMA' });
 
-            // GRÁFICO 2: TOP CAMPAÑAS (RESTAURADO)
+            // GRÁFICO 2: TOP CAMPAÑAS CON LÓGICA DE POSICIÓN DINÁMICA
             const sortedC = Object.keys(campMap).map(k => ({ n: k, s: parseFloat((campMap[k].s/3600).toFixed(1)), sis: campMap[k].sis })).sort((a,b) => a.s - b.s).slice(-10);
+            const maxVal = Math.max(...sortedC.map(x => x.s), 1);
+            
             Plotly.newPlot('g_bar', [{
                 x: sortedC.map(x => x.s), y: sortedC.map(x => x.n), type: 'bar', orientation: 'h',
                 marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') },
-                text: sortedC.map(x => x.s + 'h'), textposition: 'outside'
-            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS)', margin: { l: 150 } });
+                text: sortedC.map(x => x.s + 'h'),
+                textposition: sortedC.map(x => (x.s / maxVal) < 0.25 ? 'outside' : 'inside'),
+                textfont: { color: sortedC.map(x => (x.s / maxVal) < 0.25 ? '#475569' : '#ffffff'), size: 10, weight: 800 },
+                cliponaxis: false
+            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS)', margin: { l: 150, r: 60 } });
 
-            // GRÁFICO 3: PIE
-            Plotly.newPlot('g_pie', [{ labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', marker: { colors: ['#2563eb', '#f97316'] } }], { ...layoutBase, title: 'DISTRIBUCIÓN SISTEMAS' });
+            // GRÁFICO 3: PIE CON ETIQUETAS DETALLADAS
+            Plotly.newPlot('g_pie', [{ 
+                labels: ['Sprinklr', 'Vicidial'], 
+                values: [s_spr, s_vic], 
+                type: 'pie', 
+                textinfo: 'label+percent+value',
+                texttemplate: '%{label}<br>%{percent}<br>%{value}s',
+                marker: { colors: ['#2563eb', '#f97316'] },
+                hole: 0.3
+            }], { ...layoutBase, title: 'DISTRIBUCIÓN SISTEMAS' });
 
             // --- SECCIÓN STAFFING ---
             let weekRanges = [];
             for(let i=0; i<rango.length; i+=7) weekRanges.push(rango.slice(i, i+7));
-
             let staffSpr = [], staffVic = [], staffLabels = [], trendData = {};
 
             weekRanges.forEach((wRange, i) => {
@@ -268,32 +280,31 @@
                         if(tToSec(r.daily[idx]) > 0) {
                             if(r.sis.includes('SPRINKLR')) uSpr.add(r.name);
                             else uVic.add(r.name);
-                            
                             if(!trendData[r.camp]) trendData[r.camp] = new Array(weekRanges.length).fill(0);
-                            let campUsers = new Set();
-                            // Cálculo interno para tendencia por campaña
-                            wRange.forEach(idx2 => {
-                                rawDataFRows.filter(row => row.camp === r.camp).forEach(row => {
-                                    if(tToSec(row.daily[idx2]) > 0) campUsers.add(row.name);
-                                });
-                            });
-                            trendData[r.camp][i] = campUsers.size;
                         }
                     });
                 });
                 staffSpr.push(uSpr.size); staffVic.push(uVic.size);
+                
+                // Cálculo de tendencia
+                Object.keys(trendData).forEach(cName => {
+                    let cUsers = new Set();
+                    wRange.forEach(idxW => {
+                        rawDataFRows.filter(row => row.camp === cName).forEach(row => {
+                            if(tToSec(row.daily[idxW]) > 0) cUsers.add(row.name);
+                        });
+                    });
+                    trendData[cName][i] = cUsers.size;
+                });
             });
 
-            // GRÁFICO STAFF SEMANAL (BARRAS DIVIDIDAS)
             let staffTraces = [];
             if(sis_f === "ALL" || sis_f === "SPRINKLR") staffTraces.push({ x: staffLabels, y: staffSpr, name: 'Sprinklr', type: 'bar', marker: {color: '#2563eb'}, text: staffSpr, textposition: 'auto' });
             if(sis_f === "ALL" || sis_f === "VICIDIAL") staffTraces.push({ x: staffLabels, y: staffVic, name: 'Vicidial', type: 'bar', marker: {color: '#f97316'}, text: staffVic, textposition: 'auto' });
-
             Plotly.newPlot('g_staff_weeks', staffTraces, { ...layoutBase, barmode: 'group' });
 
-            // GRÁFICO TENDENCIA (LÍNEAS POR CAMPAÑA)
             let trendTraces = Object.keys(trendData).slice(0, 5).map(c => ({
-                x: staffLabels, y: trendData[c], name: c, type: 'scatter', mode: 'lines+markers'
+                x: staffLabels, y: trendData[c], name: c, type: 'scatter', mode: 'lines+markers+text', text: trendData[c], textposition: 'top center'
             }));
             Plotly.newPlot('g_staff_trend', trendTraces, layoutBase);
 
@@ -301,7 +312,6 @@
             if(ger_f) renderCalendar(ger_f, rango);
         }
 
-        // OTROS MÉTODOS (ALERTAS, CALENDARIO, EXCEL) SE MANTIENEN IGUAL...
         function renderAlerts(rango) {
             const ger = document.getElementById('filter_ger').value;
             const query = document.getElementById('search_user').value.toUpperCase();
