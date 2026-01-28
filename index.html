@@ -137,7 +137,7 @@
             if(lines.length < 2) return;
             const separator = lines[0].includes(';') ? ';' : ',';
             const headers = lines[0].split(separator);
-            globalDates = headers.slice(9).map(d => d.trim().replace(/['"]+/g, ''));
+            globalDates = headers.slice(9).map(d => d ? d.trim().replace(/['"]+/g, '') : "N/D");
             
             monthsFound = {};
             globalDates.forEach((d, idx) => {
@@ -244,7 +244,7 @@
                 marker: { colors: ['#2563eb', '#f97316'] }
             }], { ...layoutBase, title: 'MIX SISTEMAS' }, config);
 
-            // G_BAR - CORRECCIÓN DE CÁLCULO Y ETIQUETAS FORZADAS
+            // G_BAR - CORRECCIÓN DE ETIQUETAS Y ESPACIADO
             const sortedC = Object.keys(campMap)
                 .map(k => ({
                     n: k, 
@@ -255,28 +255,30 @@
                 .sort((a,b) => a.s - b.s)
                 .slice(-10);
 
-           Plotly.newPlot('g_bar', [{
-    x: sortedC.map(x => x.s), 
-    y: sortedC.map(x => x.n), 
-    type: 'bar', 
-    orientation: 'h',
-    text: sortedC.map(x => x.s + 'h'),
-    texttemplate: '%{text}', 
-    textposition: 'outside',      // Mueve el texto fuera de la barra
-    cliponaxis: false,            // Evita que el texto se corte
-    marker: { 
-        color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') 
-    }
-}], { 
-    ...layoutBase, 
-    title: 'TOP 10 CAMPAÑAS (HORAS)', 
-    margin: { l: 160, r: 80, t: 50, b: 50 }, // Aumentamos margen derecho para las etiquetas
-    xaxis: { 
-        showgrid: false, 
-        zeroline: false,
-        range: [0, Math.max(...sortedC.map(x => x.s)) * 1.2] // Espacio extra a la derecha
-    }
-}, config);
+            Plotly.newPlot('g_bar', [{
+                x: sortedC.map(x => x.s), 
+                y: sortedC.map(x => x.n), 
+                type: 'bar', 
+                orientation: 'h',
+                text: sortedC.map(x => x.s + 'h'),
+                texttemplate: '%{text}', 
+                textposition: 'outside', 
+                cliponaxis: false,
+                marker: { 
+                    color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') 
+                }
+            }], { 
+                ...layoutBase, 
+                title: 'TOP 10 CAMPAÑAS (HORAS)', 
+                margin: { l: 180, r: 100, t: 50, b: 50 }, 
+                xaxis: { 
+                    showgrid: false, 
+                    zeroline: false,
+                    range: [0, Math.max(...sortedC.map(x => x.s), 1) * 1.3] 
+                },
+                yaxis: { automargin: true }
+            }, config);
+
             renderAlerts(rango);
             if(ger) renderCalendar(ger, rango);
         }
