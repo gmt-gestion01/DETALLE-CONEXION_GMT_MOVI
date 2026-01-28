@@ -42,7 +42,7 @@
                 </select>
                 <select id="filter_month" class="bg-blue-50 text-blue-700 text-[10px] font-black px-4 py-2 rounded-full outline-none"></select>
                 <select id="filter_week" class="bg-slate-100 text-[10px] font-black px-4 py-2 rounded-full outline-none"></select>
-                <button onclick="document.getElementById('csv_input').click()" class="bg-slate-800 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase shadow-md">📂 CARGAR DATA</button>
+                <button onclick="document.getElementById('csv_input').click()" class="bg-slate-800 text-white px-5 py-2 rounded-full text-[10px] font-black uppercase shadow-md">📂 CARGAR LOCAL</button>
                 <input type="file" id="csv_input" class="hidden">
                 <button id="btn_excel" onclick="generarExcel()" class="hidden bg-emerald-600 text-white px-5 py-2 rounded-full text-[10px] font-black shadow-md uppercase">📊 EXCEL</button>
             </div>
@@ -60,7 +60,7 @@
                 <div><p class="text-[8px] opacity-60 uppercase font-bold">Acumulado Periodo</p><p id="acum_sem" class="text-sm font-black text-orange-400">0h</p></div>
                 <div><p class="text-[8px] opacity-60 uppercase font-bold">Días en Vista</p><p id="acum_dias" class="text-sm font-black text-white">0</p></div>
                 <div><p class="text-[8px] opacity-60 uppercase font-bold">Promedio Diario</p><p id="acum_prom" class="text-sm font-black text-emerald-400">0h</p></div>
-                <div><p class="text-[8px] opacity-60 uppercase font-bold">Data Status</p><p class="text-sm font-black text-blue-400">ONLINE</p></div>
+                <div><p class="text-[8px] opacity-60 uppercase font-bold">Data Status</p><p id="data_status" class="text-sm font-black text-blue-400">SIN DATA</p></div>
             </div>
 
             <div id="alerta_panel" class="hidden bg-white border border-red-200 rounded-xl mb-8 overflow-hidden shadow-sm">
@@ -68,12 +68,14 @@
                     <span class="text-white text-[10px] font-black uppercase tracking-widest">⚠️ ALERTAS DE INACTIVIDAD (>= 2 DÍAS)</span>
                     <input type="text" id="search_user" placeholder="BUSCAR EJECUTIVO..." class="bg-white/20 text-white placeholder-white/60 text-[9px] px-3 py-1 rounded-lg border border-white/30 outline-none focus:bg-white focus:text-slate-900 transition-all w-48 uppercase font-bold">
                 </div>
-                <div class="max-h-60 overflow-y-auto"><table class="w-full text-[10px] text-left">
-                    <thead class="sticky-thead font-bold uppercase text-slate-500">
-                        <tr><th class="p-3">Ejecutivo</th><th class="p-3 text-center">Días Activos</th><th class="p-3 text-center">Inactividad</th><th class="p-3">Cnx Total</th><th class="p-3">Campaña</th><th class="p-3">Gerencia</th></tr>
-                    </thead>
-                    <tbody id="t_body_alerts" class="divide-y divide-slate-100"></tbody>
-                </table></div>
+                <div class="max-h-60 overflow-y-auto">
+                    <table class="w-full text-[10px] text-left">
+                        <thead class="sticky-thead font-bold uppercase text-slate-500">
+                            <tr><th class="p-3">Ejecutivo</th><th class="p-3 text-center">Días Activos</th><th class="p-3 text-center">Inactividad</th><th class="p-3">Cnx Total</th><th class="p-3">Campaña</th><th class="p-3">Gerencia</th></tr>
+                        </thead>
+                        <tbody id="t_body_alerts" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow-md border mb-8"><div id="g_weekly" style="height: 350px;"></div></div>
@@ -99,6 +101,22 @@
         const USERS_DB = { "JSOROZCO": "gmt2026_1", "MACERON": "gmt2026_2", "JMMALDONADO": "gmt2026_3", "ADMIN": "gmt2026" };
         let rawDataFRows = [], globalDates = [], groupedData = {}, monthsFound = {};
 
+        // --- LÓGICA DE CARGA AUTOMÁTICA AL INICIAR ---
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch('data.csv') 
+                .then(res => {
+                    if(!res.ok) throw new Error("No se halló data.csv automático");
+                    return res.text();
+                })
+                .then(csv => {
+                    procesarCSV(csv);
+                    document.getElementById('data_status').innerText = "ONLINE (GITHUB)";
+                })
+                .catch(err => {
+                    console.log("Esperando carga manual o archivo inexistente en el servidor.");
+                });
+        });
+
         document.getElementById('form_acceso').onsubmit = e => {
             e.preventDefault();
             const u = document.getElementById('user_name').value.toUpperCase().trim();
@@ -111,7 +129,10 @@
 
         document.getElementById('csv_input').onchange = e => { 
             const reader = new FileReader(); 
-            reader.onload = f => procesarCSV(f.target.result); 
+            reader.onload = f => {
+                procesarCSV(f.target.result);
+                document.getElementById('data_status').innerText = "LOCAL (MANUAL)";
+            };
             reader.readAsText(e.target.files[0]); 
         };
 
@@ -119,6 +140,7 @@
             if(!t) return 0;
             const clean = t.toString().replace(/['"]+/g, '').trim();
             const p = clean.split(':');
+            if(p.length < 2) return 0;
             return (parseInt(p[0]) || 0) * 3600 + (parseInt(p[1]) || 0) * 60 + (parseInt(p[2]) || 0);
         }
 
@@ -129,12 +151,18 @@
 
         function procesarCSV(csvText) {
             const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
-            const headers = lines[0].split(',');
+            if(lines.length < 2) return;
+            
+            // Detectar separador automático (coma o punto y coma)
+            const separator = lines[0].includes(';') ? ';' : ',';
+            const headers = lines[0].split(separator);
+            
             globalDates = headers.slice(9).map(d => d.trim().replace(/['"]+/g, ''));
             
             monthsFound = {};
             globalDates.forEach((d, idx) => {
                 const parts = d.split('/');
+                if(parts.length < 2) return;
                 const monthKey = parts[1];
                 if(!monthsFound[monthKey]) monthsFound[monthKey] = { name: "MES "+monthKey, indices: [] };
                 monthsFound[monthKey].indices.push(idx);
@@ -147,7 +175,7 @@
             rawDataFRows = []; groupedData = {}; 
             let caps = new Set();
             lines.slice(1).forEach(line => {
-                const c = line.split(','); if (c.length < 10) return;
+                const c = line.split(separator); if (c.length < 10) return;
                 const sis = c[0].replace(/['"]+/g, '').toUpperCase().trim(); 
                 const name = c[1].replace(/['"]+/g, '').trim(); 
                 const ger = (c[3] || '').replace(/['"]+/g, '').trim().toUpperCase() || "#N/D";
@@ -165,6 +193,7 @@
             
             const gers = [...new Set(rawDataFRows.map(d => d.ger))].sort();
             document.getElementById('filter_ger').innerHTML = '<option value="">-- TODAS LAS GERENCIAS --</option>' + gers.map(g => `<option value="${g}">${g}</option>`).join('');
+            
             document.getElementById('main_content').classList.remove('hidden');
             document.getElementById('btn_excel').classList.remove('hidden');
             actualizarSemanas();
@@ -181,7 +210,7 @@
         function actualizarSemanas() {
             const mKey = document.getElementById('filter_month').value;
             const ws = document.getElementById('filter_week');
-            let baseDates = mKey === "ALL" ? globalDates : monthsFound[mKey].indices;
+            let baseDates = mKey === "ALL" ? globalDates : (monthsFound[mKey]?.indices || []);
             ws.innerHTML = '<option value="ALL">VISTA MENSUAL</option>';
             for(let i=0; i < Math.ceil(baseDates.length/7); i++) ws.innerHTML += `<option value="${i}">SEM ${i+1}</option>`;
             renderDashboard(); 
