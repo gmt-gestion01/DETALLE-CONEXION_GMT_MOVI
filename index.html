@@ -58,6 +58,21 @@
                 <div><p class="text-[8px] opacity-60 uppercase font-bold">Status</p><p id="data_status" class="text-sm font-black text-blue-400">CARGANDO...</p></div>
             </div>
 
+            <div id="alerta_panel" class="hidden bg-white border border-red-200 rounded-xl mb-6 overflow-hidden shadow-sm">
+                <div class="bg-red-600 p-3 flex flex-col md:flex-row justify-between items-center gap-2">
+                    <span class="text-white text-[10px] font-black uppercase tracking-widest">⚠️ ALERTAS DE INACTIVIDAD</span>
+                    <input type="text" id="search_user" placeholder="BUSCAR EJECUTIVO..." class="bg-white/20 text-white placeholder-white/60 text-[9px] px-3 py-1 rounded-lg border border-white/30 outline-none focus:bg-white focus:text-slate-900 w-full md:w-48 uppercase font-bold">
+                </div>
+                <div class="max-h-60 overflow-y-auto">
+                    <table class="w-full text-[10px] text-left">
+                        <thead class="sticky-thead font-bold uppercase text-slate-500">
+                            <tr><th class="p-3">Ejecutivo</th><th class="p-3 text-center">Activos</th><th class="p-3 text-center">Inactividad</th><th class="p-3">Cnx Total</th><th class="p-3">Gerencia</th></tr>
+                        </thead>
+                        <tbody id="t_body_alerts" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="space-y-6 mb-6">
                 <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_weekly" style="height: 350px; width: 100%;"></div></div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -69,7 +84,6 @@
             <div class="bg-slate-900 p-6 rounded-xl flex flex-col items-center gap-2 mb-6 shadow-xl">
                 <p class="text-white text-[9px] font-bold opacity-40 uppercase mb-1">Visualizar Calendario por Gerencia</p>
                 <select id="filter_ger" class="bg-white text-slate-800 text-xs font-black p-3 rounded-xl w-full max-w-md outline-none cursor-pointer"></select>
-                <input type="text" id="search_user" placeholder="BUSCAR EJECUTIVO..." class="mt-2 bg-white/10 text-white placeholder-white/50 text-[10px] px-4 py-2 rounded-lg border border-white/20 outline-none w-full max-w-md uppercase">
             </div>
 
             <div id="detail_sections" class="hidden">
@@ -86,9 +100,12 @@
 
         function cargarDataAutomaticamente() {
             fetch('data.csv') 
-                .then(res => res.text())
-                .then(csv => { procesarCSV(csv); document.getElementById('data_status').innerText = "ONLINE"; })
-                .catch(() => { document.getElementById('data_status').innerText = "ERROR DATA"; });
+                .then(res => { if(!res.ok) throw new Error(); return res.text(); })
+                .then(csv => { procesarCSV(csv); document.getElementById('data_status').innerText = "ONLINE (GITHUB)"; })
+                .catch(() => { 
+                    document.getElementById('data_status').innerText = "DATA NO HALLADA"; 
+                    document.getElementById('data_status').style.color = "#f87171";
+                });
         }
 
         document.getElementById('form_acceso').onsubmit = e => {
@@ -99,14 +116,15 @@
                 document.getElementById('login_layer').style.display = 'none';
                 document.getElementById('dashboard_wrapper').classList.remove('hidden');
                 cargarDataAutomaticamente();
-            } else { alert("Error"); }
+            } else { alert("Error de acceso"); }
         };
 
         function tToSec(t) { 
             if(!t) return 0;
-            const p = t.toString().replace(/['"]+/g, '').trim().split(':');
+            const clean = t.toString().replace(/['"]+/g, '').trim();
+            const p = clean.split(':');
             if(p.length < 2) return 0;
-            return (parseInt(p[0])||0)*3600 + (parseInt(p[1])||0)*60 + (parseInt(p[2])||0);
+            return (parseInt(p[0]) || 0) * 3600 + (parseInt(p[1]) || 0) * 60 + (parseInt(p[2]) || 0);
         }
 
         function secToT(s) { 
@@ -116,17 +134,18 @@
 
         function procesarCSV(csvText) {
             const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
+            if(lines.length < 2) return;
             const separator = lines[0].includes(';') ? ';' : ',';
             const headers = lines[0].split(separator);
             globalDates = headers.slice(9).map(d => d.trim().replace(/['"]+/g, ''));
             
             monthsFound = {};
             globalDates.forEach((d, idx) => {
-                const monthKey = d.split('/')[1];
-                if(monthKey) {
-                    if(!monthsFound[monthKey]) monthsFound[monthKey] = { name: "MES "+monthKey, indices: [] };
-                    monthsFound[monthKey].indices.push(idx);
-                }
+                const parts = d.split('/');
+                if(parts.length < 2) return;
+                const monthKey = parts[1];
+                if(!monthsFound[monthKey]) monthsFound[monthKey] = { name: "MES "+monthKey, indices: [] };
+                monthsFound[monthKey].indices.push(idx);
             });
 
             const ms = document.getElementById('filter_month');
@@ -139,8 +158,8 @@
                 const c = line.split(separator); if (c.length < 10) return;
                 const sis = c[0].replace(/['"]+/g, '').toUpperCase().trim(); 
                 const name = c[1].replace(/['"]+/g, '').trim(); 
-                const ger = (c[3]||'').replace(/['"]+/g, '').trim().toUpperCase() || "#N/D";
-                const camp = (c[4]||'').replace(/['"]+/g, '').trim().toUpperCase() || "#N/D";
+                const ger = (c[3] || '').replace(/['"]+/g, '').trim().toUpperCase() || "#N/D";
+                const camp = (c[4] || '').replace(/['"]+/g, '').trim().toUpperCase() || "#N/D";
                 const daily = c.slice(9);
                 caps.add(camp);
                 rawDataFRows.push({ sis, name, ger, camp, daily });
@@ -170,101 +189,148 @@
             const camp = document.getElementById('filter_camp').value;
             const m = document.getElementById('filter_month').value;
             const w = document.getElementById('filter_week').value;
-            
             let rango = m === "ALL" ? globalDates.map((_,i)=>i) : (monthsFound[m]?.indices || []);
             if(w !== "ALL") rango = rango.slice(parseInt(w)*7, (parseInt(w)+1)*7);
 
-            let s_spr = 0, s_vic = 0, sprV = [], vicV = [], labels = [];
+            let s_spr = 0, s_vic = 0, s_total = 0, sprV = [], vicV = [], labels = [];
             const campMap = {};
+            let filtered = rawDataFRows.filter(r => (!ger || r.ger === ger) && (!camp || r.camp === camp));
 
             rango.forEach(idx => {
                 labels.push(globalDates[idx].substring(0,5));
                 let dS = 0, dV = 0;
-                rawDataFRows.forEach(r => {
-                    if ((!ger || r.ger === ger) && (!camp || r.camp === camp)) {
-                        const s = tToSec(r.daily[idx]);
-                        if(r.sis.includes('SPRINKLR')) dS += s; else dV += s;
-                        
-                        const cKey = r.camp || "#N/D";
-                        if(!campMap[cKey]) campMap[cKey] = { s: 0, sis: r.sis };
-                        campMap[cKey].s += s;
+                filtered.forEach(r => {
+                    const s = tToSec(r.daily[idx]);
+                    if(r.sis.includes('SPRINKLR')) dS += s; else dV += s;
+                    if(s > 0) {
+                        if(!campMap[r.camp]) campMap[r.camp] = { s: 0, sis: r.sis };
+                        campMap[r.camp].s += s;
                     }
                 });
-                s_spr += dS; s_vic += dV;
+                s_spr += dS; s_vic += dV; s_total += (dS + dV);
                 sprV.push((dS/3600).toFixed(1)); vicV.push((dV/3600).toFixed(1));
             });
 
             document.getElementById('k_spr').innerText = secToT(s_spr);
             document.getElementById('k_vic').innerText = secToT(s_vic);
-            document.getElementById('k_tot').innerText = secToT(s_spr + s_vic);
-            document.getElementById('acum_sem').innerText = ((s_spr + s_vic)/3600).toFixed(1) + "h";
+            document.getElementById('k_tot').innerText = secToT(s_total);
+            document.getElementById('acum_sem').innerText = (s_total/3600).toFixed(1) + "h";
             document.getElementById('acum_dias').innerText = rango.length;
-            document.getElementById('acum_prom').innerText = (((s_spr + s_vic)/3600)/(rango.length || 1)).toFixed(1) + "h/d";
+            document.getElementById('acum_prom').innerText = ((s_total/3600)/(rango.length || 1)).toFixed(1) + "h/d";
 
             const layoutBase = { 
-                margin: {t:40, b:40, l:40, r:20}, autosize: true, 
-                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-                xaxis: { fixedrange: true }, yaxis: { fixedrange: true }
+                margin: {t:40, b:40, l:40, r:20}, 
+                autosize: true, 
+                font: { size: 10, family: 'sans-serif' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                hovermode: false,
+                xaxis: { fixedrange: true },
+                yaxis: { fixedrange: true }
             };
 
-            // Gráfica Lineal
-            Plotly.newPlot('g_weekly', [
-                { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb'} },
-                { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316'} }
-            ], { ...layoutBase, title: 'DETALLE DIARIO (HORAS)' }, {displayModeBar: false});
+            const config = { responsive: true, displayModeBar: false };
 
-            // Gráfica de Pastel
+            // G_WEEKLY con etiquetas fijas y escala bloqueada
+            Plotly.newPlot('g_weekly', [
+                { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb', width: 3} },
+                { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316', width: 3} }
+            ], { ...layoutBase, title: 'EVOLUCIÓN DIARIA (HORAS)' }, config);
+
+            // G_PIE con etiquetas fijas
             Plotly.newPlot('g_pie', [{
                 labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', hole: 0.4,
-                textinfo: 'percent', marker: { colors: ['#2563eb', '#f97316'] }
-            }], { ...layoutBase, title: 'BALANCE SISTEMAS' }, {displayModeBar: false});
+                textinfo: 'label+percent', textposition: 'inside',
+                marker: { colors: ['#2563eb', '#f97316'] }
+            }], { ...layoutBase, title: 'MIX SISTEMAS' }, config);
 
-            // Gráfica de Barras (Corregida)
-            const sortedC = Object.keys(campMap)
-                .map(k => ({n: k, s: parseFloat((campMap[k].s/3600).toFixed(1)), sis: campMap[k].sis}))
-                .filter(x => x.s > 0)
-                .sort((a,b) => a.s - b.s).slice(-10);
-
+            // G_BAR con etiquetas fijas y escala bloqueada
+            const sortedC = Object.keys(campMap).map(k => ({n: k, s: (campMap[k].s/3600).toFixed(1), sis: campMap[k].sis})).sort((a,b) => a.s - b.s).slice(-10);
             Plotly.newPlot('g_bar', [{
                 x: sortedC.map(x => x.s), y: sortedC.map(x => x.n), type: 'bar', orientation: 'h',
-                text: sortedC.map(x => x.s + "h"), textposition: 'auto',
+                text: sortedC.map(x => x.s + 'h'), textposition: 'auto',
                 marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') }
-            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS', margin: { l: 150 } }, {displayModeBar: false});
+            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS', margin: { l: 120 } }, config);
 
+            renderAlerts(rango);
             if(ger) renderCalendar(ger, rango);
+        }
+
+        function renderAlerts(rango) {
+            const ger = document.getElementById('filter_ger').value;
+            const camp = document.getElementById('filter_camp').value;
+            const query = document.getElementById('search_user').value.toUpperCase();
+            const userMetrics = Object.values(groupedData).map(u => {
+                let totalSec = 0, diasAct = 0;
+                rango.forEach(idx => {
+                    let cnxDia = 0; Object.values(u.systems).forEach(sys => cnxDia += tToSec(sys.daily[idx]));
+                    if(cnxDia > 0) diasAct++; totalSec += cnxDia;
+                });
+                return { ...u, totalSec, diasActivos: diasAct, inact: rango.length - diasAct };
+            });
+
+            const alerts = userMetrics.filter(x => 
+                x.totalSec > 0 && x.inact >= 2 && (!ger || x.ger === ger) && (!camp || x.camp === camp) && x.name.toUpperCase().includes(query)
+            );
+            
+            document.getElementById('k_inact').innerText = alerts.length;
+            document.getElementById('alerta_panel').classList.toggle('hidden', alerts.length === 0 && query === "");
+            document.getElementById('t_body_alerts').innerHTML = alerts.sort((a,b)=>b.inact - a.inact).map(i => `
+                <tr class="hover:bg-slate-50"><td class="p-3 font-bold uppercase">${i.name}</td><td class="p-3 text-center text-blue-600">${i.diasActivos}D</td><td class="p-3 text-center text-red-600 font-black bg-red-50">${i.inact}D</td><td class="p-3 font-bold">${secToT(i.totalSec)}</td><td class="p-3 uppercase text-slate-500">${i.ger}</td></tr>`).join('');
         }
 
         function renderCalendar(ger, rango) {
             let h = ""; const query = document.getElementById('search_user').value.toUpperCase();
             const camp = document.getElementById('filter_camp').value;
             const f = Object.values(groupedData).filter(d => d.ger === ger && d.name.toUpperCase().includes(query) && (!camp || d.camp === camp)).sort((a,b)=>a.name.localeCompare(b.name));
+
             f.forEach(d => {
-                h += `<tr class="bg-slate-800 text-white font-bold text-[9px]"><td colspan="2" class="p-2 pl-4 uppercase">${d.name}</td></tr>`;
+                h += `<tr class="bg-slate-800 text-white font-bold text-[9px]"><td colspan="2" class="p-2 pl-4 uppercase">${d.name} [${d.camp}]</td></tr>`;
                 Object.keys(d.systems).forEach(s => {
                     const dots = rango.map(idx => {
-                        const v = tToSec(d.systems[s].daily[idx]);
-                        return `<div class="day-box ${v>0?(s.includes('SPRINKLR')?'spr-high':'vic-high'):'day-off'}">${globalDates[idx].split('/')[0]}</div>`;
+                        const v = d.systems[s].daily[idx];
+                        return `<div class="day-box ${tToSec(v)>0?(s.includes('SPRINKLR')?'spr-high':'vic-high'):'day-off'}">${globalDates[idx].split('/')[0]}</div>`;
                     }).join('');
                     h += `<tr><td class="p-2 text-[8px] pl-6 w-24 text-slate-400 font-bold">${s}</td><td class="p-2 flex flex-wrap gap-1">${dots}</td></tr>`;
                 });
             });
             document.getElementById('t_body_calendar').innerHTML = h;
-            document.getElementById('detail_sections').classList.toggle('hidden', f.length === 0);
+            document.getElementById('detail_sections').classList.remove('hidden');
         }
 
-        document.getElementById('search_user').addEventListener('input', () => { if(document.getElementById('filter_ger').value) renderDashboard(); });
+        document.getElementById('search_user').addEventListener('input', () => renderDashboard());
         document.getElementById('filter_camp').onchange = () => renderDashboard();
         document.getElementById('filter_month').onchange = () => actualizarSemanas();
         document.getElementById('filter_week').onchange = () => renderDashboard();
-        document.getElementById('filter_ger').onchange = () => renderDashboard();
+        document.getElementById('filter_ger').onchange = (e) => { 
+            renderDashboard(); 
+            if(!e.target.value) document.getElementById('detail_sections').classList.add('hidden');
+        };
 
         function generarExcel() {
-            const data = rawDataFRows.map(r => ({ "SISTEMA": r.sis, "EJECUTIVO": r.name, "GERENCIA": r.ger, "CAMPAÑA": r.camp }));
+            const ger = document.getElementById('filter_ger').value;
+            const camp = document.getElementById('filter_camp').value;
+            const rango = globalDates.map((_,i)=>i);
+            const data = Object.values(groupedData).map(u => {
+                    let sec = 0, act = 0;
+                    rango.forEach(idx => {
+                        let cnx = 0; Object.values(u.systems).forEach(sys => cnx += tToSec(sys.daily[idx]));
+                        if(cnx > 0) act++; sec += cnx;
+                    });
+                    return { "EJECUTIVO": u.name, "GERENCIA": u.ger, "CAMPAÑA": u.camp, "HORAS TOTALES": secToT(sec), "DÍAS ACT": act, "DÍAS INACT": rango.length - act };
+                })
+                .filter(x => (!ger || x.GERENCIA === ger) && (!camp || x.CAMPAÑA === camp));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Data");
-            XLSX.writeFile(wb, "GMT_REPORT.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "Auditoria");
+            XLSX.writeFile(wb, `GMT_AUDITORIA.xlsx`);
         }
+        
+        window.addEventListener('resize', () => {
+            Plotly.Plots.resize('g_weekly');
+            Plotly.Plots.resize('g_bar');
+            Plotly.Plots.resize('g_pie');
+        });
     </script>
 </body>
 </html>
