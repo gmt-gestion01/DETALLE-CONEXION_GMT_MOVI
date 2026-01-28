@@ -13,7 +13,6 @@
         .day-off { background-color: #ffffff; color: #cbd5e1; border: 1px solid #e2e8f0; }
         #login_layer { position: fixed; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 9999; }
         .sticky-thead th { position: sticky; top: 0; background-color: #f8fafc; z-index: 10; border-bottom: 2px solid #e2e8f0; }
-        /* Ajuste para que las gráficas no se desborden */
         .plot-container { width: 100% !important; height: 100% !important; }
     </style>
 </head>
@@ -224,24 +223,39 @@
                 autosize: true, 
                 font: { size: 10, family: 'sans-serif' },
                 paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(0,0,0,0)'
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: { fixedrange: true }, // Bloquea el zoom en el eje X
+                yaxis: { fixedrange: true }  // Bloquea el zoom en el eje Y
             };
 
+            // Gráfica semanal con etiquetas de datos fijas
             Plotly.newPlot('g_weekly', [
-                { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers', line: {color: '#2563eb', width: 3} },
-                { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers', line: {color: '#f97316', width: 3} }
-            ], { ...layoutBase, title: 'EVOLUCIÓN DIARIA (HORAS)' });
+                { 
+                    x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', 
+                    mode: 'lines+markers+text', text: sprV, textposition: 'top center', 
+                    line: {color: '#2563eb', width: 3} 
+                },
+                { 
+                    x: labels, y: vicV, name: 'Vicidial', type: 'scatter', 
+                    mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', 
+                    line: {color: '#f97316', width: 3} 
+                }
+            ], { ...layoutBase, title: 'EVOLUCIÓN DIARIA (HORAS)' }, {displayModeBar: false});
 
+            // Gráfica de pastel con etiquetas fijas
             Plotly.newPlot('g_pie', [{
                 labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', hole: 0.4,
+                textinfo: 'label+percent', textposition: 'inside',
                 marker: { colors: ['#2563eb', '#f97316'] }
-            }], { ...layoutBase, title: 'MIX SISTEMAS' });
+            }], { ...layoutBase, title: 'MIX SISTEMAS' }, {displayModeBar: false});
 
+            // Gráfica de barras con etiquetas fijas
             const sortedC = Object.keys(campMap).map(k => ({n: k, s: (campMap[k].s/3600).toFixed(1), sis: campMap[k].sis})).sort((a,b) => a.s - b.s).slice(-10);
             Plotly.newPlot('g_bar', [{
                 x: sortedC.map(x => x.s), y: sortedC.map(x => x.n), type: 'bar', orientation: 'h',
+                text: sortedC.map(x => x.s), textposition: 'auto',
                 marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') }
-            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS', margin: { l: 120 } });
+            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS', margin: { l: 120 } }, {displayModeBar: false});
 
             renderAlerts(rango);
             if(ger) renderCalendar(ger, rango);
@@ -317,7 +331,6 @@
             XLSX.writeFile(wb, `GMT_AUDITORIA.xlsx`);
         }
         
-        // Redibujar gráficas al cambiar tamaño de ventana
         window.addEventListener('resize', () => {
             Plotly.Plots.resize('g_weekly');
             Plotly.Plots.resize('g_bar');
