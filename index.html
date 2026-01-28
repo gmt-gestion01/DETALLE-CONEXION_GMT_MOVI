@@ -74,16 +74,10 @@
             </div>
 
             <div class="space-y-6 mb-6">
-                <div class="bg-white p-4 rounded-xl shadow-md border">
-                    <div id="g_weekly" style="height: 350px; width: 100%;"></div>
-                </div>
+                <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_weekly" style="height: 350px; width: 100%;"></div></div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-4 rounded-xl shadow-md border">
-                        <div id="g_bar" style="height: 400px; width: 100%;"></div>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-md border">
-                        <div id="g_pie" style="height: 400px; width: 100%;"></div>
-                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_bar" style="height: 400px; width: 100%;"></div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_pie" style="height: 400px; width: 100%;"></div></div>
                 </div>
             </div>
 
@@ -209,7 +203,6 @@
                     const s = tToSec(r.daily[idx]);
                     if(r.sis.includes('SPRINKLR')) dS += s; else dV += s;
                     
-                    // Agrupación para Top Campañas (Gráfica de Barras)
                     const cKey = r.camp || "#N/D";
                     if(!campMap[cKey]) campMap[cKey] = { s: 0, sis: r.sis };
                     campMap[cKey].s += s;
@@ -235,35 +228,30 @@
                 yaxis: { fixedrange: true }
             };
 
-            // 1. GRAFICA SEMANAL (Líneas con etiquetas)
+            // Gráfica Lineal con Etiquetas
             Plotly.newPlot('g_weekly', [
                 { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb', width: 3} },
                 { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316', width: 3} }
             ], { ...layoutBase, title: 'EVOLUCIÓN DIARIA (HORAS)' }, {displayModeBar: false});
 
-            // 2. GRAFICA DE PASTEL (Balance Sistemas)
+            // Gráfica de Pastel con Etiquetas
             Plotly.newPlot('g_pie', [{
                 labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', hole: 0.4,
                 textinfo: 'label+percent', textposition: 'inside',
                 marker: { colors: ['#2563eb', '#f97316'] }
-            }], { ...layoutBase, title: 'BALANCE SISTEMAS' }, {displayModeBar: false});
+            }], { ...layoutBase, title: 'MIX SISTEMAS' }, {displayModeBar: false});
 
-            // 3. GRAFICA DE BARRAS (Top 10 Campañas con etiquetas)
+            // Gráfica de Barras con Etiquetas
             const sortedC = Object.keys(campMap)
                 .map(k => ({n: k, s: parseFloat((campMap[k].s/3600).toFixed(1)), sis: campMap[k].sis}))
                 .filter(x => x.s > 0)
-                .sort((a,b) => a.s - b.s)
-                .slice(-10);
+                .sort((a,b) => a.s - b.s).slice(-10);
 
             Plotly.newPlot('g_bar', [{
-                x: sortedC.map(x => x.s), 
-                y: sortedC.map(x => x.n), 
-                type: 'bar', 
-                orientation: 'h',
-                text: sortedC.map(x => x.s), // Etiqueta de valor
-                textposition: 'auto',
+                x: sortedC.map(x => x.s), y: sortedC.map(x => x.n), type: 'bar', orientation: 'h',
+                text: sortedC.map(x => x.s + "h"), textposition: 'auto',
                 marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') }
-            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS', margin: { l: 150, r: 40 } }, {displayModeBar: false});
+            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS', margin: { l: 150, r: 50 } }, {displayModeBar: false});
 
             renderAlerts(rango);
             if(ger) renderCalendar(ger, rango);
