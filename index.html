@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GMT CONTROL | STAFFING & TENDENCIAS</title>
+    <title>GMT CONTROL | AUDITORÍA 2026</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -19,11 +19,11 @@
 
     <div id="login_layer">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center border-t-4 border-blue-600">
-            <h2 class="text-2xl font-black mb-2 uppercase tracking-tighter">GMT SISTEMA</h2>
+            <h2 class="text-2xl font-black mb-2 uppercase tracking-tighter text-slate-900">GMT SISTEMA</h2>
             <form id="form_acceso" class="space-y-4">
                 <input type="text" id="user_name" placeholder="USUARIO" required class="w-full p-4 border-2 rounded-xl text-center font-bold outline-none focus:border-blue-500">
                 <input type="password" id="pass" placeholder="CONTRASEÑA" required class="w-full p-4 border-2 rounded-xl text-center font-bold outline-none focus:border-blue-500">
-                <button type="submit" class="w-full bg-blue-600 text-white p-4 rounded-xl font-black shadow-lg uppercase">Entrar</button>
+                <button type="submit" class="w-full bg-blue-600 text-white p-4 rounded-xl font-black shadow-lg uppercase hover:bg-blue-700 transition-all">Entrar</button>
             </form>
         </div>
     </div>
@@ -35,9 +35,9 @@
                 <p class="text-[10px] font-bold text-slate-400 uppercase italic">Control de Conexión 2026</p>
             </div>
             <div class="flex flex-wrap justify-center gap-3">
-                <select id="filter_camp" class="bg-emerald-50 text-emerald-700 text-[10px] font-black px-4 py-2 rounded-lg border border-emerald-100 outline-none"></select>
-                <select id="filter_month" class="bg-blue-50 text-blue-700 text-[10px] font-black px-4 py-2 rounded-lg border border-blue-100 outline-none"></select>
-                <select id="filter_week" class="bg-slate-100 text-slate-700 text-[10px] font-black px-4 py-2 rounded-lg border border-slate-200 outline-none"></select>
+                <select id="filter_camp" class="bg-emerald-50 text-emerald-700 text-[10px] font-black px-4 py-2 rounded-lg border border-emerald-100 outline-none cursor-pointer"></select>
+                <select id="filter_month" class="bg-blue-50 text-blue-700 text-[10px] font-black px-4 py-2 rounded-lg border border-blue-100 outline-none cursor-pointer"></select>
+                <select id="filter_week" class="bg-slate-100 text-slate-700 text-[10px] font-black px-4 py-2 rounded-lg border border-slate-200 outline-none cursor-pointer"></select>
                 <button id="btn_excel" onclick="generarExcel()" class="hidden bg-emerald-600 text-white px-5 py-2 rounded-lg text-[10px] font-black shadow-md uppercase">📊 EXCEL</button>
             </div>
         </div>
@@ -50,19 +50,19 @@
                 <div class="bg-white p-4 rounded-xl border shadow-sm text-center md:text-left"><p class="text-[9px] font-bold text-red-500 uppercase italic">Críticos</p><p id="k_inact" class="text-lg font-black text-red-600">0</p></div>
             </div>
 
-            <div id="alerta_panel" class="hidden bg-white border border-red-200 rounded-xl mb-6 overflow-hidden shadow-md">
+            <div id="alerta_panel" class="hidden bg-white border border-red-200 rounded-xl mb-6 overflow-hidden shadow-lg">
                 <div class="bg-red-600 p-3 flex justify-between items-center">
-                    <span class="text-white text-[10px] font-black">⚠️ ALERTAS DE INACTIVIDAD</span>
-                    <input type="text" id="search_user" placeholder="BUSCAR ASESOR..." class="bg-white/20 text-white text-[9px] px-3 py-1 rounded-lg outline-none w-48 uppercase font-bold placeholder-white/60">
+                    <span class="text-white text-[10px] font-black tracking-widest">⚠️ ALERTAS DE INACTIVIDAD</span>
+                    <input type="text" id="search_user" placeholder="BUSCAR ASESOR..." class="bg-white/20 text-white text-[9px] px-3 py-1 rounded-lg outline-none w-48 uppercase font-bold placeholder-white/70">
                 </div>
-                <div class="max-h-60 overflow-y-auto">
-                    <table class="w-full text-[10px] text-left">
-                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold sticky top-0">
+                <div class="max-h-64 overflow-y-auto">
+                    <table class="w-full text-[10px] text-left border-collapse">
+                        <thead class="bg-slate-100 text-slate-600 uppercase font-bold sticky top-0">
                             <tr>
-                                <th class="p-2">Ejecutivo</th>
-                                <th class="p-2">Días Inactivos</th>
-                                <th class="p-2">Conexión Total</th>
-                                <th class="p-2">Gerencia</th>
+                                <th class="p-3 border-b">Ejecutivo</th>
+                                <th class="p-3 border-b">Días Inactivos</th>
+                                <th class="p-3 border-b">Hrs Totales</th>
+                                <th class="p-3 border-b">Gerencia</th>
                             </tr>
                         </thead>
                         <tbody id="t_body_alerts" class="divide-y divide-slate-100"></tbody>
@@ -77,10 +77,13 @@
                 <div><p class="text-[8px] opacity-60 uppercase font-bold">Última Carga</p><p id="data_status" class="text-sm font-black text-blue-400">---</p></div>
             </div>
 
-            <div class="space-y-6 mb-6">
-                <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_weekly" style="height: 350px;"></div></div>
+            <div class="flex flex-col gap-6 mb-6">
+                <div class="bg-white p-4 rounded-xl shadow-md border w-full">
+                    <div id="g_bar" style="height: 450px;"></div>
+                </div>
+                
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_bar" style="height: 400px;"></div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_weekly" style="height: 400px;"></div></div>
                     <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_pie" style="height: 400px;"></div></div>
                 </div>
             </div>
@@ -118,7 +121,7 @@
         let rawDataFRows = [], globalDates = [], groupedData = {}, monthsFound = {};
 
         function cargarDataAutomaticamente() {
-            fetch('data.csv').then(res => res.text()).then(csv => procesarCSV(csv)).catch(err => console.error("Error cargando CSV:", err));
+            fetch('data.csv').then(res => res.text()).then(csv => procesarCSV(csv)).catch(err => console.error("Error CSV:", err));
         }
 
         document.getElementById('form_acceso').onsubmit = e => {
@@ -129,7 +132,7 @@
                 document.getElementById('login_layer').style.display = 'none';
                 document.getElementById('dashboard_wrapper').classList.remove('hidden');
                 cargarDataAutomaticamente();
-            } else { alert("Error de acceso"); }
+            } else { alert("Acceso denegado"); }
         };
 
         function tToSec(t) { 
@@ -233,18 +236,18 @@
             document.getElementById('acum_prom').innerText = (((s_spr + s_vic)/3600)/(rango.length || 1)).toFixed(1) + "h";
 
             const layoutBase = { 
-                margin: {t:40, b:40, l:50, r:20}, font: { size: 9, weight: 700 },
+                margin: {t:50, b:50, l:50, r:50}, font: { size: 9, weight: 700 },
                 paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
                 xaxis: { fixedrange: true }, yaxis: { fixedrange: true }
             };
 
-            // EVOLUCIÓN
+            // GRÁFICO 1: EVOLUCIÓN
             Plotly.newPlot('g_weekly', [
                 { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb'} },
                 { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316'} }
-            ], { ...layoutBase, title: 'AUDITORÍA DE HORAS POR SISTEMA' });
+            ], { ...layoutBase, title: 'EVOLUCIÓN DE HORAS POR SISTEMA' });
 
-            // TOP CAMPAÑAS (FIXED)
+            // GRÁFICO 2: TOP 10 CAMPAÑAS (MAXIMIZADO)
             const sortedC = Object.keys(campMap).map(k => ({ n: k, s: parseFloat((campMap[k].s/3600).toFixed(1)), sis: campMap[k].sis })).sort((a,b) => a.s - b.s).slice(-10);
             const maxVal = Math.max(...sortedC.map(x => x.s), 1);
             
@@ -252,16 +255,16 @@
                 x: sortedC.map(x => x.s), y: sortedC.map(x => x.n), type: 'bar', orientation: 'h',
                 marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') },
                 text: sortedC.map(x => x.s + 'h'),
-                textposition: sortedC.map(x => (x.s / maxVal) < 0.3 ? 'outside' : 'inside'),
-                textfont: { color: sortedC.map(x => (x.s / maxVal) < 0.3 ? '#1e293b' : '#ffffff'), size: 10, weight: 800 },
+                textposition: sortedC.map(x => (x.s / maxVal) < 0.2 ? 'outside' : 'inside'),
+                textfont: { color: sortedC.map(x => (x.s / maxVal) < 0.2 ? '#1e293b' : '#ffffff'), size: 10, weight: 800 },
                 cliponaxis: false
-            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS)', margin: { l: 150, r: 80, t:40, b:40 } });
+            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS CON MAYOR CONEXIÓN', margin: { l: 200, r: 100 }, yaxis: { automargin: true } });
 
-            // PIE
+            // GRÁFICO 3: PIE
             Plotly.newPlot('g_pie', [{ 
                 labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', 
                 textinfo: 'label+percent', marker: { colors: ['#2563eb', '#f97316'] }, hole: 0.3
-            }], { ...layoutBase, title: 'DISTRIBUCIÓN SISTEMAS' });
+            }], { ...layoutBase, title: 'DISTRIBUCIÓN POR SISTEMA' });
 
             // STAFFING
             let weekRanges = [];
@@ -280,10 +283,10 @@
                 staffSpr.push(uSpr.size); staffVic.push(uVic.size);
             });
 
-            let staffTraces = [];
-            if(sis_f === "ALL" || sis_f === "SPRINKLR") staffTraces.push({ x: staffLabels, y: staffSpr, name: 'Sprinklr', type: 'bar', marker: {color: '#2563eb'}, text: staffSpr, textposition: 'auto' });
-            if(sis_f === "ALL" || sis_f === "VICIDIAL") staffTraces.push({ x: staffLabels, y: staffVic, name: 'Vicidial', type: 'bar', marker: {color: '#f97316'}, text: staffVic, textposition: 'auto' });
-            Plotly.newPlot('g_staff_weeks', staffTraces, { ...layoutBase, title: 'STAFF POR SISTEMA', barmode: 'group' });
+            let sTraces = [];
+            if(sis_f === "ALL" || sis_f === "SPRINKLR") sTraces.push({ x: staffLabels, y: staffSpr, name: 'Sprinklr', type: 'bar', marker: {color: '#2563eb'}, text: staffSpr, textposition: 'auto' });
+            if(sis_f === "ALL" || sis_f === "VICIDIAL") sTraces.push({ x: staffLabels, y: staffVic, name: 'Vicidial', type: 'bar', marker: {color: '#f97316'}, text: staffVic, textposition: 'auto' });
+            Plotly.newPlot('g_staff_weeks', sTraces, { ...layoutBase, title: 'STAFF ACTIVO POR SISTEMA', barmode: 'group' });
 
             renderAlerts(rango);
             if(ger_f) renderCalendar(ger_f, rango);
@@ -305,10 +308,10 @@
             document.getElementById('alerta_panel').classList.toggle('hidden', alerts.length === 0 && query === "");
             document.getElementById('t_body_alerts').innerHTML = alerts.map(i => `
                 <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="p-2 font-bold uppercase text-slate-700">${i.name}</td>
-                    <td class="p-2 text-red-600 font-black">${i.inact} DÍAS</td>
-                    <td class="p-2 font-bold text-slate-500">${secToT(i.s)}</td>
-                    <td class="p-2 uppercase text-slate-400 font-medium">${i.ger}</td>
+                    <td class="p-3 font-bold uppercase text-slate-800">${i.name}</td>
+                    <td class="p-3 text-red-600 font-black">${i.inact} DÍAS</td>
+                    <td class="p-3 font-bold text-slate-500">${secToT(i.s)}</td>
+                    <td class="p-3 uppercase text-slate-400 font-medium">${i.ger}</td>
                 </tr>`).join('');
         }
 
