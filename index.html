@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GMT CONTROL | AUDITORÍA 2026</title>
+    <title>GMT CONTROL | DETALLE DE CONEXION 2026</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -52,17 +52,17 @@
 
             <div id="alerta_panel" class="hidden bg-white border border-red-200 rounded-xl mb-6 overflow-hidden shadow-lg">
                 <div class="bg-red-600 p-3 flex justify-between items-center">
-                    <span class="text-white text-[10px] font-black tracking-widest">⚠️ ALERTAS DE INACTIVIDAD</span>
+                    <span class="text-white text-[10px] font-black tracking-widest uppercase">⚠️ Alertas de Inactividad Reciente</span>
                     <input type="text" id="search_user" placeholder="BUSCAR ASESOR..." class="bg-white/20 text-white text-[9px] px-3 py-1 rounded-lg outline-none w-48 uppercase font-bold placeholder-white/70">
                 </div>
                 <div class="max-h-64 overflow-y-auto">
                     <table class="w-full text-[10px] text-left border-collapse">
                         <thead class="bg-slate-100 text-slate-600 uppercase font-bold sticky top-0">
                             <tr>
-                                <th class="p-3 border-b">Ejecutivo</th>
-                                <th class="p-3 border-b">Días Inactivos</th>
-                                <th class="p-3 border-b">Hrs Totales</th>
-                                <th class="p-3 border-b">Gerencia</th>
+                                <th class="p-3 border-b">Ejecutivo / Asesor</th>
+                                <th class="p-3 border-b">Inactividad</th>
+                                <th class="p-3 border-b">Horas Conectadas</th>
+                                <th class="p-3 border-b">Gerencia Responsable</th>
                             </tr>
                         </thead>
                         <tbody id="t_body_alerts" class="divide-y divide-slate-100"></tbody>
@@ -70,37 +70,18 @@
                 </div>
             </div>
 
-            <div class="bg-slate-800 text-white p-4 rounded-xl shadow-lg mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div><p class="text-[8px] opacity-60 uppercase font-bold">Acumulado</p><p id="acum_sem" class="text-sm font-black text-orange-400">0h</p></div>
-                <div><p class="text-[8px] opacity-60 uppercase font-bold">Días</p><p id="acum_dias" class="text-sm font-black text-white">0</p></div>
-                <div><p class="text-[8px] opacity-60 uppercase font-bold">Promedio</p><p id="acum_prom" class="text-sm font-black text-emerald-400">0h</p></div>
-                <div><p class="text-[8px] opacity-60 uppercase font-bold">Última Carga</p><p id="data_status" class="text-sm font-black text-blue-400">---</p></div>
-            </div>
-
-            <div class="flex flex-col gap-6 mb-6">
-                <div class="bg-white p-4 rounded-xl shadow-md border w-full">
-                    <div id="g_bar" style="height: 450px;"></div>
-                </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_weekly" style="height: 400px;"></div></div>
-                    <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_pie" style="height: 400px;"></div></div>
-                </div>
+            <div class="bg-white p-6 rounded-xl shadow-md border mb-6">
+                <div id="g_bar" style="height: 450px;"></div>
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow-md border mb-6">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b pb-4">
-                    <h3 class="text-[11px] font-black text-slate-500 uppercase tracking-widest">📈 Staffing: Tendencia & Sistemas</h3>
-                    <select id="staff_filter_sis" class="text-[9px] font-bold p-2 bg-slate-100 rounded-lg outline-none">
-                        <option value="ALL">TODOS LOS SISTEMAS</option>
-                        <option value="SPRINKLR">SPRINKLR (AZUL)</option>
-                        <option value="VICIDIAL">VICIDIAL (NARANJA)</option>
-                    </select>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div id="g_staff_weeks" style="height: 350px;"></div>
-                    <div id="g_staff_trend" style="height: 350px;"></div>
-                </div>
+                <h3 class="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4">🗺️ Densidad de Staff por Campaña y Semana</h3>
+                <div id="g_staff_heat" style="height: 400px;"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_weekly" style="height: 380px;"></div></div>
+                <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_pie" style="height: 380px;"></div></div>
             </div>
 
             <div class="bg-slate-900 p-6 rounded-xl flex flex-col items-center gap-2 mb-6 shadow-xl">
@@ -121,7 +102,7 @@
         let rawDataFRows = [], globalDates = [], groupedData = {}, monthsFound = {};
 
         function cargarDataAutomaticamente() {
-            fetch('data.csv').then(res => res.text()).then(csv => procesarCSV(csv)).catch(err => console.error("Error CSV:", err));
+            fetch('data.csv').then(res => res.text()).then(csv => procesarCSV(csv));
         }
 
         document.getElementById('form_acceso').onsubmit = e => {
@@ -132,7 +113,7 @@
                 document.getElementById('login_layer').style.display = 'none';
                 document.getElementById('dashboard_wrapper').classList.remove('hidden');
                 cargarDataAutomaticamente();
-            } else { alert("Acceso denegado"); }
+            } else { alert("Error"); }
         };
 
         function tToSec(t) { 
@@ -152,28 +133,14 @@
             const separator = lines[0].includes(';') ? ';' : ',';
             const headers = lines[0].split(separator);
             globalDates = headers.slice(9).map(d => d.trim().replace(/['"]+/g, ''));
-            document.getElementById('data_status').innerText = globalDates[globalDates.length - 1];
-
-            monthsFound = {};
-            globalDates.forEach((d, idx) => {
-                const parts = d.split('/');
-                if(parts.length < 2) return;
-                const monthKey = parts[1];
-                if(!monthsFound[monthKey]) monthsFound[monthKey] = { name: "MES "+monthKey, indices: [] };
-                monthsFound[monthKey].indices.push(idx);
-            });
-
-            const ms = document.getElementById('filter_month');
-            ms.innerHTML = '<option value="ALL">TOTAL PERIODO</option>';
-            Object.keys(monthsFound).sort().forEach(m => ms.innerHTML += `<option value="${m}">${monthsFound[m].name}</option>`);
 
             rawDataFRows = []; groupedData = {}; let caps = new Set();
             lines.slice(1).forEach(line => {
                 const c = line.split(separator); if (c.length < 10) return;
                 const sis = c[0].replace(/['"]+/g, '').toUpperCase().trim(); 
                 const name = c[1].replace(/['"]+/g, '').trim(); 
-                const ger = (c[3] || '').replace(/['"]+/g, '').trim().toUpperCase() || "#N/D";
-                const camp = (c[4] || '').replace(/['"]+/g, '').trim().toUpperCase() || "#N/D";
+                const ger = (c[3] || '').replace(/['"]+/g, '').trim().toUpperCase() || "N/D";
+                const camp = (c[4] || '').replace(/['"]+/g, '').trim().toUpperCase() || "N/D";
                 const daily = c.slice(9);
                 caps.add(camp);
                 rawDataFRows.push({ sis, name, ger, camp, daily });
@@ -183,34 +150,30 @@
 
             document.getElementById('filter_camp').innerHTML = '<option value="">TODAS LAS CAMPAÑAS</option>' + [...caps].sort().map(x => `<option value="${x}">${x}</option>`).join('');
             const gers = [...new Set(rawDataFRows.map(d => d.ger))].sort();
-            document.getElementById('filter_ger').innerHTML = '<option value="">-- GERENCIAS --</option>' + gers.map(g => `<option value="${g}">${g}</option>`).join('');
+            document.getElementById('filter_ger').innerHTML = '<option value="">-- SELECCIONAR GERENCIA --</option>' + gers.map(g => `<option value="${g}">${g}</option>`).join('');
+            
+            // Simular meses
+            document.getElementById('filter_month').innerHTML = '<option value="ALL">TOTAL PERIODO</option><option value="01">ENERO</option>';
             document.getElementById('main_content').classList.remove('hidden');
-            document.getElementById('btn_excel').classList.remove('hidden');
             actualizarSemanas();
         }
 
         function actualizarSemanas() {
-            const mKey = document.getElementById('filter_month').value;
             const ws = document.getElementById('filter_week');
-            let baseDates = mKey === "ALL" ? globalDates : (monthsFound[mKey]?.indices || []);
             ws.innerHTML = '<option value="ALL">VISTA MENSUAL</option>';
-            for(let i=0; i < Math.ceil(baseDates.length/7); i++) ws.innerHTML += `<option value="${i}">SEM ${i+1}</option>`;
-            renderDashboard(); 
+            for(let i=0; i < Math.ceil(globalDates.length/7); i++) ws.innerHTML += `<option value="${i}">SEMANA ${i+1}</option>`;
+            renderDashboard();
         }
 
         function renderDashboard() {
             const ger_f = document.getElementById('filter_ger').value;
             const camp_f = document.getElementById('filter_camp').value;
-            const m_f = document.getElementById('filter_month').value;
             const w_f = document.getElementById('filter_week').value;
-            const sis_f = document.getElementById('staff_filter_sis').value;
 
-            let rango = m_f === "ALL" ? globalDates.map((_,i)=>i) : (monthsFound[m_f]?.indices || []);
+            let rango = globalDates.map((_,i)=>i);
             if(w_f !== "ALL") rango = rango.slice(parseInt(w_f)*7, (parseInt(w_f)+1)*7);
 
-            let s_spr = 0, s_vic = 0, sprV = [], vicV = [], labels = [];
-            let campMap = {}; 
-
+            let s_spr = 0, s_vic = 0, sprV = [], vicV = [], labels = [], campMap = {};
             let filtered = rawDataFRows.filter(r => (!ger_f || r.ger === ger_f) && (!camp_f || r.camp === camp_f));
 
             rango.forEach(idx => {
@@ -231,62 +194,53 @@
             document.getElementById('k_spr').innerText = secToT(s_spr);
             document.getElementById('k_vic').innerText = secToT(s_vic);
             document.getElementById('k_tot').innerText = secToT(s_spr + s_vic);
-            document.getElementById('acum_sem').innerText = ((s_spr + s_vic)/3600).toFixed(1) + "h";
-            document.getElementById('acum_dias').innerText = rango.length;
-            document.getElementById('acum_prom').innerText = (((s_spr + s_vic)/3600)/(rango.length || 1)).toFixed(1) + "h";
 
             const layoutBase = { 
-                margin: {t:50, b:50, l:50, r:50}, font: { size: 9, weight: 700 },
-                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-                xaxis: { fixedrange: true }, yaxis: { fixedrange: true }
+                margin: {t:40, b:40, l:60, r:40}, font: { size: 9, weight: 700 },
+                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)'
             };
 
-            // GRÁFICO 1: EVOLUCIÓN
-            Plotly.newPlot('g_weekly', [
-                { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, textposition: 'top center', line: {color: '#2563eb'} },
-                { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, textposition: 'bottom center', line: {color: '#f97316'} }
-            ], { ...layoutBase, title: 'EVOLUCIÓN DE HORAS POR SISTEMA' });
-
-            // GRÁFICO 2: TOP 10 CAMPAÑAS (MAXIMIZADO)
+            // 1. TOP 10 CAMPAÑAS (BARRA HORIZONTAL)
             const sortedC = Object.keys(campMap).map(k => ({ n: k, s: parseFloat((campMap[k].s/3600).toFixed(1)), sis: campMap[k].sis })).sort((a,b) => a.s - b.s).slice(-10);
-            const maxVal = Math.max(...sortedC.map(x => x.s), 1);
-            
             Plotly.newPlot('g_bar', [{
                 x: sortedC.map(x => x.s), y: sortedC.map(x => x.n), type: 'bar', orientation: 'h',
                 marker: { color: sortedC.map(x => x.sis.includes('SPRINKLR') ? '#2563eb' : '#f97316') },
-                text: sortedC.map(x => x.s + 'h'),
-                textposition: sortedC.map(x => (x.s / maxVal) < 0.2 ? 'outside' : 'inside'),
-                textfont: { color: sortedC.map(x => (x.s / maxVal) < 0.2 ? '#1e293b' : '#ffffff'), size: 10, weight: 800 },
-                cliponaxis: false
-            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS CON MAYOR CONEXIÓN', margin: { l: 200, r: 100 }, yaxis: { automargin: true } });
+                text: sortedC.map(x => x.s + 'h'), textposition: 'auto', textfont: { color: '#ffffff' }
+            }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS TOTALES)', margin: { l: 220 } });
 
-            // GRÁFICO 3: PIE
-            Plotly.newPlot('g_pie', [{ 
-                labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', 
-                textinfo: 'label+percent', marker: { colors: ['#2563eb', '#f97316'] }, hole: 0.3
-            }], { ...layoutBase, title: 'DISTRIBUCIÓN POR SISTEMA' });
-
-            // STAFFING
-            let weekRanges = [];
-            for(let i=0; i<rango.length; i+=7) weekRanges.push(rango.slice(i, i+7));
-            let staffSpr = [], staffVic = [], staffLabels = [];
-            weekRanges.forEach((wRange, i) => {
-                staffLabels.push(`Sem ${i+1}`);
-                let uSpr = new Set(), uVic = new Set();
-                wRange.forEach(idx => {
-                    filtered.forEach(r => {
-                        if(tToSec(r.daily[idx]) > 0) {
-                            if(r.sis.includes('SPRINKLR')) uSpr.add(r.name); else uVic.add(r.name);
-                        }
+            // 2. HEATMAP: STAFF POR CAMPAÑA Y SEMANA
+            let campList = [...new Set(filtered.map(r => r.camp))].slice(0, 15);
+            let weekLabels = ["Sem 1", "Sem 2", "Sem 3", "Sem 4"];
+            let heatZ = campList.map(c => {
+                return [0, 1, 2, 3].map(wIdx => {
+                    let semRango = globalDates.map((_,i)=>i).slice(wIdx*7, (wIdx+1)*7);
+                    let staffSet = new Set();
+                    semRango.forEach(dayIdx => {
+                        filtered.filter(r => r.camp === c).forEach(r => {
+                            if(tToSec(r.daily[dayIdx]) > 0) staffSet.add(r.name);
+                        });
                     });
+                    return staffSet.size;
                 });
-                staffSpr.push(uSpr.size); staffVic.push(uVic.size);
             });
 
-            let sTraces = [];
-            if(sis_f === "ALL" || sis_f === "SPRINKLR") sTraces.push({ x: staffLabels, y: staffSpr, name: 'Sprinklr', type: 'bar', marker: {color: '#2563eb'}, text: staffSpr, textposition: 'auto' });
-            if(sis_f === "ALL" || sis_f === "VICIDIAL") sTraces.push({ x: staffLabels, y: staffVic, name: 'Vicidial', type: 'bar', marker: {color: '#f97316'}, text: staffVic, textposition: 'auto' });
-            Plotly.newPlot('g_staff_weeks', sTraces, { ...layoutBase, title: 'STAFF ACTIVO POR SISTEMA', barmode: 'group' });
+            Plotly.newPlot('g_staff_heat', [{
+                z: heatZ, x: weekLabels, y: campList, type: 'heatmap',
+                colorscale: [[0, '#f8fafc'], [0.5, '#60a5fa'], [1, '#1e40af']],
+                showscale: true, text: heatZ, hoverinfo: 'label+z'
+            }], { ...layoutBase, margin: { l: 200 } });
+
+            // 3. EVOLUCIÓN
+            Plotly.newPlot('g_weekly', [
+                { x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', text: sprV, line: {color: '#2563eb'} },
+                { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', text: vicV, line: {color: '#f97316'} }
+            ], { ...layoutBase, title: 'EVOLUCIÓN DIARIA' });
+
+            // 4. PIE
+            Plotly.newPlot('g_pie', [{ 
+                labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', 
+                marker: { colors: ['#2563eb', '#f97316'] }, hole: 0.4
+            }], { ...layoutBase, title: 'DISTRIBUCIÓN SISTEMAS' });
 
             renderAlerts(rango);
             if(ger_f) renderCalendar(ger_f, rango);
@@ -295,23 +249,23 @@
         function renderAlerts(rango) {
             const ger = document.getElementById('filter_ger').value;
             const query = document.getElementById('search_user').value.toUpperCase();
-            const userMetrics = Object.values(groupedData).map(u => {
+            const alerts = Object.values(groupedData).map(u => {
                 let s = 0, act = 0;
                 rango.forEach(idx => {
                     let d = 0; Object.values(u.systems).forEach(sys => d += tToSec(sys.daily[idx]));
                     if(d > 0) act++; s += d;
                 });
                 return { ...u, s, inact: rango.length - act };
-            });
-            const alerts = userMetrics.filter(x => x.s > 0 && x.inact >= 2 && (!ger || x.ger === ger) && x.name.toUpperCase().includes(query));
+            }).filter(x => x.s > 0 && x.inact >= 2 && (!ger || x.ger === ger) && x.name.toUpperCase().includes(query));
+
             document.getElementById('k_inact').innerText = alerts.length;
             document.getElementById('alerta_panel').classList.toggle('hidden', alerts.length === 0 && query === "");
             document.getElementById('t_body_alerts').innerHTML = alerts.map(i => `
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="p-3 font-bold uppercase text-slate-800">${i.name}</td>
+                <tr class="hover:bg-red-50">
+                    <td class="p-3 font-bold uppercase">${i.name}</td>
                     <td class="p-3 text-red-600 font-black">${i.inact} DÍAS</td>
                     <td class="p-3 font-bold text-slate-500">${secToT(i.s)}</td>
-                    <td class="p-3 uppercase text-slate-400 font-medium">${i.ger}</td>
+                    <td class="p-3 uppercase text-slate-400">${i.ger}</td>
                 </tr>`).join('');
         }
 
@@ -329,12 +283,11 @@
             document.getElementById('detail_sections').classList.remove('hidden');
         }
 
-        document.getElementById('staff_filter_sis').onchange = () => renderDashboard();
-        document.getElementById('search_user').addEventListener('input', () => renderDashboard());
         document.getElementById('filter_camp').onchange = () => renderDashboard();
-        document.getElementById('filter_month').onchange = () => actualizarSemanas();
+        document.getElementById('filter_month').onchange = () => renderDashboard();
         document.getElementById('filter_week').onchange = () => renderDashboard();
         document.getElementById('filter_ger').onchange = (e) => { renderDashboard(); if(!e.target.value) document.getElementById('detail_sections').classList.add('hidden'); };
+        document.getElementById('search_user').oninput = () => renderDashboard();
 
         function generarExcel() {
             const data = rawDataFRows.map(r => ({ "SISTEMA": r.sis, "EJECUTIVO": r.name, "GERENCIA": r.ger, "CAMPAÑA": r.camp, "TOTAL": r.daily.reduce((a,b)=>a+tToSec(b),0) }));
