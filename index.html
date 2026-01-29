@@ -32,7 +32,7 @@
         <div class="bg-white p-6 rounded-xl shadow-sm border mb-6 flex flex-col lg:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-xl font-black uppercase text-slate-900">GMT CONTROL | <span class="text-blue-600">AUDITORÍA</span></h1>
-                <p class="text-[10px] font-bold text-slate-400 uppercase italic">Módulo de Control Operativo</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase italic">Módulo de Control Operativo | Actualizado al: <span id="last_update" class="text-blue-600 underline">--/--</span></p>
             </div>
             <div class="flex flex-wrap justify-center gap-3">
                 <select id="filter_camp" class="bg-emerald-50 text-emerald-700 text-[10px] font-black px-4 py-2 rounded-lg border border-emerald-100 outline-none"></select>
@@ -101,7 +101,6 @@
     </div>
 
     <script>
-        // LÓGICA DE DATOS ORIGINAL RESTAURADA
         const USERS_DB = { "JSOROZCO": "gmt2026_1", "MACERON": "gmt2026_2", "JMMALDONADO": "gmt2026_3", "ADMIN": "gmt2026" };
         let rawDataFRows = [], globalDates = [], groupedData = {};
 
@@ -129,6 +128,12 @@
             const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
             const sep = lines[0].includes(';') ? ';' : ',';
             globalDates = lines[0].split(sep).slice(9).map(d => d.trim().replace(/['"]+/g, ''));
+            
+            // ADICIÓN: Mostrar el último día de la data en el encabezado
+            if(globalDates.length > 0) {
+                document.getElementById('last_update').innerText = globalDates[globalDates.length - 1];
+            }
+
             rawDataFRows = []; groupedData = {}; let caps = new Set();
             lines.slice(1).forEach(line => {
                 const c = line.split(sep); if (c.length < 10) return;
@@ -167,10 +172,8 @@
                 filtered.forEach(r => {
                     const s = tToSec(r.daily[idx]);
                     if(r.sis.includes('SPRINKLR')) dS += s; else dV += s;
-                    
                     const cN = r.camp.toUpperCase();
                     if(cN.includes("PREPAGO")) s_pre += s; else if(cN.includes("POS")) s_pos += s; else s_oth += s;
-
                     if(s > 0) {
                         if(!campStats[r.camp]) campStats[r.camp] = { s: 0, spr: new Set(), vic: new Set() };
                         campStats[r.camp].s += s;
@@ -188,8 +191,8 @@
             document.getElementById('res_otros').innerText = (s_oth/3600).toFixed(1) + "h";
 
             const layoutBase = { margin: {t:40, b:40, l:60, r:40}, font: { size: 10, weight: 700 }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' };
-
             const topC = Object.keys(campStats).map(k => ({ n: k, s: parseFloat((campStats[k].s/3600).toFixed(1)) })).sort((a,b) => a.s - b.s).slice(-10);
+            
             Plotly.newPlot('g_bar', [{ x: topC.map(x=>x.s), y: topC.map(x=>x.n), type: 'bar', orientation: 'h', marker: { color: topC.map(x => getColorByCamp(x.n)) }, text: topC.map(x=>x.s+'h'), textposition:'auto' }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS)', margin: {l:220} });
 
             Plotly.newPlot('g_weekly', [
