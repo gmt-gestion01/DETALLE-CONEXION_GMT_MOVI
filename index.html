@@ -36,7 +36,22 @@
             </div>
             <div class="flex flex-wrap justify-center gap-3">
                 <select id="filter_camp" class="bg-emerald-50 text-emerald-700 text-[10px] font-black px-4 py-2 rounded-lg border border-emerald-100 outline-none"></select>
-                <select id="filter_month" class="bg-blue-50 text-blue-700 text-[10px] font-black px-4 py-2 rounded-lg border border-blue-100 outline-none"></select>
+                
+                <select id="filter_month" class="bg-blue-50 text-blue-700 text-[10px] font-black px-4 py-2 rounded-lg border border-blue-100 outline-none">
+                    <option value="01">ENERO 2026</option>
+                    <option value="02">FEBRERO 2026</option>
+                    <option value="03">MARZO 2026</option>
+                    <option value="04">ABRIL 2026</option>
+                    <option value="05">MAYO 2026</option>
+                    <option value="06">JUNIO 2026</option>
+                    <option value="07">JULIO 2026</option>
+                    <option value="08">AGOSTO 2026</option>
+                    <option value="09">SEPTIEMBRE 2026</option>
+                    <option value="10">OCTUBRE 2026</option>
+                    <option value="11">NOVIEMBRE 2026</option>
+                    <option value="12">DICIEMBRE 2026</option>
+                </select>
+
                 <select id="filter_week" class="bg-slate-100 text-slate-700 text-[10px] font-black px-4 py-2 rounded-lg border border-slate-200 outline-none"></select>
                 <button onclick="generarExcel()" class="bg-emerald-600 text-white px-5 py-2 rounded-lg text-[10px] font-black uppercase">📊 EXCEL</button>
             </div>
@@ -82,6 +97,7 @@
 
             <div class="bg-white p-6 rounded-xl shadow-md border mb-6"><div id="g_bar" style="height: 400px;"></div></div>
             <div class="bg-white p-6 rounded-xl shadow-md border mb-6"><div id="g_weekly" style="height: 380px;"></div></div>
+
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_staff_camp" style="height: 380px;"></div></div>
                 <div class="bg-white p-4 rounded-xl shadow-md border">
@@ -89,7 +105,9 @@
                     <div id="g_staff_heat" style="height: 350px;"></div>
                 </div>
             </div>
+
             <div class="bg-white p-4 rounded-xl shadow-md border mb-6"><div id="g_pie" style="height: 350px;"></div></div>
+
             <div class="bg-slate-900 p-6 rounded-xl mb-6 flex flex-col items-center">
                 <select id="filter_ger" class="bg-white text-slate-800 text-xs font-black p-3 rounded-xl w-full max-w-md outline-none cursor-pointer"></select>
             </div>
@@ -108,14 +126,36 @@
             return "#475569";                           
         }
 
+        // Lógica de acceso que carga el mes seleccionado
         document.getElementById('form_acceso').onsubmit = e => {
             e.preventDefault();
             const u = document.getElementById('user_name').value.toUpperCase().trim();
             if(USERS_DB[u] === document.getElementById('pass').value) {
                 document.getElementById('login_layer').style.display = 'none';
                 document.getElementById('dashboard_wrapper').classList.remove('hidden');
-                fetch('data.csv').then(res => res.text()).then(csv => procesarCSV(csv));
+                
+                const mesActual = document.getElementById('filter_month').value;
+                cargarArchivoMes(mesActual);
             } else { alert("Usuario o contraseña incorrectos"); }
+        };
+
+        // Función para cambiar de archivo CSV según el mes
+        function cargarArchivoMes(numMes) {
+            const nombreArchivo = `data_${numMes}.csv`;
+            fetch(nombreArchivo)
+                .then(res => {
+                    if(!res.ok) throw new Error("No se encontró el archivo del mes");
+                    return res.text();
+                })
+                .then(csv => procesarCSV(csv))
+                .catch(err => {
+                    alert("Error: No existe data para el mes seleccionado o el archivo no tiene el nombre correcto (ej: data_02.csv)");
+                });
+        }
+
+        // Evento al cambiar el selector de meses
+        document.getElementById('filter_month').onchange = (e) => {
+            cargarArchivoMes(e.target.value);
         };
 
         function tToSec(t) { if(!t) return 0; const p = t.toString().replace(/['"]+/g, '').trim().split(':'); return (parseInt(p[0]) || 0) * 3600 + (parseInt(p[1]) || 0) * 60 + (parseInt(p[2]) || 0); }
@@ -124,11 +164,9 @@
         function procesarCSV(csvText) {
             const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
             const sep = lines[0].includes(';') ? ';' : ',';
+            globalDates = lines[0].split(sep).slice(9).map(d => d.trim().replace(/['"]+/g, ''));
             
-            // Limpieza de fechas del encabezado
-            globalDates = lines[0].split(sep).slice(9).map(d => d.trim().replace(/['"]+/g, '')).filter(d => d !== "");
-            
-            // --- NUEVO CÁLCULO DINÁMICO DEL ÚLTIMO DÍA CON CARGA ---
+            // Recálculo del último día con carga real en el nuevo archivo
             let lastLoadIdx = 0;
             lines.slice(1).forEach(line => {
                 const cols = line.split(sep);
@@ -137,16 +175,14 @@
                 for(let i = dailyData.length - 1; i >= 0; i--) {
                     if(tToSec(dailyData[i]) > 0) {
                         if(i > lastLoadIdx) lastLoadIdx = i;
-                        break; // Encontramos el último día de esta fila, pasamos a la siguiente
+                        break;
                     }
                 }
             });
 
             if(globalDates.length > 0) {
-                // Se asigna la fecha real detectada en la data
                 document.getElementById('last_update').innerText = globalDates[lastLoadIdx] || globalDates[globalDates.length - 1];
             }
-            // -------------------------------------------------------
 
             rawDataFRows = []; groupedData = {}; let caps = new Set();
             lines.slice(1).forEach(line => {
@@ -165,17 +201,15 @@
             document.getElementById('filter_camp').innerHTML = '<option value="">TODAS LAS CAMPAÑAS</option>' + [...caps].sort().map(x => `<option value="${x}">${x}</option>`).join('');
             const gers = [...new Set(rawDataFRows.map(d => d.ger))].sort();
             document.getElementById('filter_ger').innerHTML = '<option value="">-- FILTRAR POR GERENCIA --</option>' + gers.map(g => `<option value="${g}">${g}</option>`).join('');
-            document.getElementById('filter_month').innerHTML = '<option value="ALL">ENERO 2026</option>';
-            document.getElementById('main_content').classList.remove('hidden');
+            
             const ws = document.getElementById('filter_week');
             ws.innerHTML = '<option value="ALL">VISTA MENSUAL</option>';
             for(let i=0; i < Math.ceil(globalDates.length/7); i++) ws.innerHTML += `<option value="${i}">SEMANA ${i+1}</option>`;
+            
+            document.getElementById('main_content').classList.remove('hidden');
             renderDashboard();
         }
 
-        // ... El resto de las funciones (renderDashboard, renderAlerts, renderCalendar, generarExcel) 
-        // se mantienen exactamente igual que en tu código original ...
-        
         function renderDashboard() {
             const ger_f = document.getElementById('filter_ger').value, camp_f = document.getElementById('filter_camp').value, w_f = document.getElementById('filter_week').value;
             let rango = globalDates.map((_,i)=>i); if(w_f !== "ALL") rango = rango.slice(parseInt(w_f)*7, (parseInt(w_f)+1)*7);
