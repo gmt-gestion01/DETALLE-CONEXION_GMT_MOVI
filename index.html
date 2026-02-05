@@ -126,20 +126,17 @@
             return "#475569";                           
         }
 
-        // Lógica de acceso que carga el mes seleccionado
         document.getElementById('form_acceso').onsubmit = e => {
             e.preventDefault();
             const u = document.getElementById('user_name').value.toUpperCase().trim();
             if(USERS_DB[u] === document.getElementById('pass').value) {
                 document.getElementById('login_layer').style.display = 'none';
                 document.getElementById('dashboard_wrapper').classList.remove('hidden');
-                
                 const mesActual = document.getElementById('filter_month').value;
                 cargarArchivoMes(mesActual);
             } else { alert("Usuario o contraseña incorrectos"); }
         };
 
-        // Función para cambiar de archivo CSV según el mes
         function cargarArchivoMes(numMes) {
             const nombreArchivo = `data_${numMes}.csv`;
             fetch(nombreArchivo)
@@ -153,7 +150,6 @@
                 });
         }
 
-        // Evento al cambiar el selector de meses
         document.getElementById('filter_month').onchange = (e) => {
             cargarArchivoMes(e.target.value);
         };
@@ -166,7 +162,6 @@
             const sep = lines[0].includes(';') ? ';' : ',';
             globalDates = lines[0].split(sep).slice(9).map(d => d.trim().replace(/['"]+/g, ''));
             
-            // Recálculo del último día con carga real en el nuevo archivo
             let lastLoadIdx = 0;
             lines.slice(1).forEach(line => {
                 const cols = line.split(sep);
@@ -286,9 +281,24 @@
         document.getElementById('search_user').oninput = () => renderDashboard();
 
         function generarExcel() {
-            const data = rawDataFRows.map(r => ({ "SISTEMA": r.sis, "EJECUTIVO": r.name, "GERENCIA": r.ger, "CAMPAÑA": r.camp, "TOTAL": r.daily.reduce((a,b)=>a+tToSec(b),0) }));
-            const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "GMT"); XLSX.writeFile(wb, "GMT_REPORTE.xlsx");
+            // Mapeo de datos: Añadimos Días de Inactividad y eliminamos el campo Total
+            const data = rawDataFRows.map(r => {
+                // Filtramos los días donde la conexión es exactamente "0:00:00" o vacío
+                const diasInactivos = r.daily.filter(dia => tToSec(dia) === 0).length;
+
+                return { 
+                    "SISTEMA": r.sis, 
+                    "EJECUTIVO": r.name, 
+                    "GERENCIA": r.ger, 
+                    "CAMPAÑA": r.camp,
+                    "DIAS INACTIVIDAD": diasInactivos // Nueva columna añadida
+                };
+            });
+
+            const ws = XLSX.utils.json_to_sheet(data); 
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "GMT_AUDITORIA"); 
+            XLSX.writeFile(wb, "GMT_REPORTE_AUDITORIA.xlsx");
         }
     </script>
 </body>
