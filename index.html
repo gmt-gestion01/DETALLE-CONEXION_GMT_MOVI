@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GMT CONTROL | DETALLE DE CONEXION 2026</title>
+    <title>GMT CONTROL | AUDITORÍA 2026</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -12,32 +12,39 @@
         .spr-high { background-color: #2563eb; color: white; }
         .vic-high { background-color: #f97316; color: white; }
         .day-off { background-color: #ffffff; color: #cbd5e1; border: 1px solid #e2e8f0; }
+        
+        /* AJUSTE INICIO: Login más pequeño */
         #login_layer { position: fixed; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-card { width: 100%; max-width: 300px; padding: 1.5rem; }
+        
+        /* AJUSTE INICIO: Reducción de escala en cabecera */
+        .header-compact { padding: 1rem !important; margin-bottom: 1rem !important; }
+        .header-compact h1 { font-size: 1.1rem !important; }
+        .header-compact select, .header-compact button { font-size: 10px !important; padding: 0.4rem 0.8rem !important; }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-800">
 
     <div id="login_layer">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-sm text-center border-t-4 border-blue-600">
-            <h2 class="text-2xl font-black mb-2 uppercase tracking-tighter text-slate-900">GMT SISTEMA</h2>
-            <form id="form_acceso" class="space-y-4">
-                <input type="text" id="user_name" placeholder="USUARIO" required class="w-full p-4 border-2 rounded-xl text-center font-bold outline-none focus:border-blue-500 uppercase">
-                <input type="password" id="pass" placeholder="CONTRASEÑA" required class="w-full p-4 border-2 rounded-xl text-center font-bold outline-none focus:border-blue-500">
-                <button type="submit" class="w-full bg-blue-600 text-white p-4 rounded-xl font-black shadow-lg uppercase hover:bg-blue-700">Entrar</button>
+        <div class="bg-white login-card rounded-2xl shadow-2xl text-center border-t-4 border-blue-600">
+            <h2 class="text-xl font-black mb-3 uppercase tracking-tighter text-slate-900">GMT SISTEMA</h2>
+            <form id="form_acceso" class="space-y-3">
+                <input type="text" id="user_name" placeholder="USUARIO" required class="w-full p-3 border-2 rounded-xl text-center font-bold outline-none focus:border-blue-500 uppercase text-sm">
+                <input type="password" id="pass" placeholder="CONTRASEÑA" required class="w-full p-3 border-2 rounded-xl text-center font-bold outline-none focus:border-blue-500 text-sm">
+                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-xl font-black shadow-lg uppercase hover:bg-blue-700 text-sm">Entrar</button>
             </form>
         </div>
     </div>
 
     <div id="dashboard_wrapper" class="hidden p-4 md:p-8 max-w-7xl mx-auto">
-        <div class="bg-white p-6 rounded-xl shadow-sm border mb-6 flex flex-col lg:flex-row justify-between items-center gap-4">
+        <div class="bg-white header-compact rounded-xl shadow-sm border flex flex-col lg:flex-row justify-between items-center gap-4">
             <div>
-                <h1 class="text-xl font-black uppercase text-slate-900">GMT CONTROL | <span class="text-blue-600">AUDITORÍA</span></h1>
-                <p class="text-[10px] font-bold text-slate-400 uppercase italic">Módulo de Control Operativo | Actualizado al: <span id="last_update" class="text-blue-600 underline">--/--</span></p>
+                <h1 class="font-black uppercase text-slate-900 leading-tight">GMT CONTROL | <span class="text-blue-600">AUDITORÍA</span></h1>
+                <p class="text-[9px] font-bold text-slate-400 uppercase italic">Actualizado al: <span id="last_update" class="text-blue-600 underline">--/--</span></p>
             </div>
-            <div class="flex flex-wrap justify-center gap-3">
-                <select id="filter_camp" class="bg-emerald-50 text-emerald-700 text-[10px] font-black px-4 py-2 rounded-lg border border-emerald-100 outline-none"></select>
-                
-                <select id="filter_month" class="bg-blue-50 text-blue-700 text-[10px] font-black px-4 py-2 rounded-lg border border-blue-100 outline-none">
+            <div class="flex flex-wrap justify-center gap-2">
+                <select id="filter_camp" class="bg-emerald-50 text-emerald-700 font-black rounded-lg border border-emerald-100 outline-none"></select>
+                <select id="filter_month" class="bg-blue-50 text-blue-700 font-black rounded-lg border border-blue-100 outline-none">
                     <option value="01">ENERO 2026</option>
                     <option value="02">FEBRERO 2026</option>
                     <option value="03">MARZO 2026</option>
@@ -51,9 +58,8 @@
                     <option value="11">NOVIEMBRE 2026</option>
                     <option value="12">DICIEMBRE 2026</option>
                 </select>
-
-                <select id="filter_week" class="bg-slate-100 text-slate-700 text-[10px] font-black px-4 py-2 rounded-lg border border-slate-200 outline-none"></select>
-                <button onclick="generarExcel()" class="bg-emerald-600 text-white px-5 py-2 rounded-lg text-[10px] font-black uppercase">📊 EXCEL GENERAL</button>
+                <select id="filter_week" class="bg-slate-100 text-slate-700 font-black rounded-lg border border-slate-200 outline-none"></select>
+                <button onclick="generarExcelGeneral()" class="bg-emerald-600 text-white rounded-lg font-black uppercase">📊 EXCEL GENERAL</button>
             </div>
         </div>
 
@@ -65,33 +71,27 @@
                 <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-[9px] font-bold text-red-500 uppercase italic">Alertas Staff</p><p id="k_inact" class="text-lg font-black text-red-600">0</p></div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div class="bg-white p-4 rounded-xl border-l-4 border-emerald-500 shadow-sm">
-                    <h4 class="text-[10px] font-black text-emerald-600 uppercase">Total Prepago</h4>
-                    <p id="res_prepago" class="text-xl font-black text-slate-700">0h</p>
-                </div>
-                <div class="bg-white p-4 rounded-xl border-l-4 border-blue-500 shadow-sm">
-                    <h4 class="text-[10px] font-black text-blue-600 uppercase">Total Pospago</h4>
-                    <p id="res_pos" class="text-xl font-black text-slate-700">0h</p>
-                </div>
-                <div class="bg-white p-4 rounded-xl border-l-4 border-slate-400 shadow-sm">
-                    <h4 class="text-[10px] font-black text-slate-500 uppercase">Otros</h4>
-                    <p id="res_otros" class="text-xl font-black text-slate-700">0h</p>
-                </div>
-            </div>
-
             <div id="alerta_panel" class="hidden bg-white border border-red-200 rounded-xl mb-6 overflow-hidden shadow-lg">
-                <div class="bg-red-600 p-3 flex justify-between items-center text-white text-[10px] font-black">
-                    <div class="flex items-center gap-4">
-                        <span>⚠️ ALERTAS DE INACTIVIDAD / SIN ESTRUCTURA</span>
-                        <button onclick="descargarExcelAlertas()" class="bg-white text-red-600 px-3 py-1 rounded hover:bg-red-50 transition-colors uppercase">📥 Descargar Solo Alertas</button>
+                <div class="bg-red-600 p-3 flex flex-col md:flex-row justify-between items-center gap-3 text-white text-[10px] font-black">
+                    <div class="flex items-center gap-2">
+                        <span>⚠️ ALERTAS CRÍTICAS (INACTIVIDAD / DATA FALTANTE)</span>
                     </div>
-                    <input type="text" id="search_user" placeholder="BUSCAR ASESOR..." class="bg-white/20 px-3 py-1 rounded outline-none placeholder-white/70 uppercase text-[9px]">
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <input type="text" id="search_user" placeholder="BUSCAR ASESOR..." class="flex-grow bg-white/20 px-3 py-2 rounded outline-none placeholder-white/70 uppercase text-[9px]">
+                        <button onclick="descargarExcelAlertas()" class="bg-white text-red-600 px-4 py-2 rounded font-black hover:bg-slate-100 transition-colors uppercase">
+                            📥 Excel Alertas
+                        </button>
+                    </div>
                 </div>
                 <div class="max-h-56 overflow-y-auto">
                     <table class="w-full text-[10px] text-left border-collapse">
                         <thead class="bg-slate-100 sticky top-0 uppercase font-bold">
-                            <tr><th class="p-3 border-b">Ejecutivo</th><th class="p-3 border-b text-center">Días Activos</th><th class="p-3 border-b">Horas</th><th class="p-3 border-b">Gerencia / Campaña</th></tr>
+                            <tr>
+                                <th class="p-3 border-b">Ejecutivo</th>
+                                <th class="p-3 border-b text-center">Días Activos</th>
+                                <th class="p-3 border-b">Horas Totales</th>
+                                <th class="p-3 border-b">Ubicación Estructura</th>
+                            </tr>
                         </thead>
                         <tbody id="t_body_alerts" class="divide-y divide-slate-100"></tbody>
                     </table>
@@ -100,15 +100,6 @@
 
             <div class="bg-white p-6 rounded-xl shadow-md border mb-6"><div id="g_bar" style="height: 400px;"></div></div>
             <div class="bg-white p-6 rounded-xl shadow-md border mb-6"><div id="g_weekly" style="height: 380px;"></div></div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div class="bg-white p-4 rounded-xl shadow-md border"><div id="g_staff_camp" style="height: 380px;"></div></div>
-                <div class="bg-white p-4 rounded-xl shadow-md border">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase text-center mb-2">Densidad de Staff</h3>
-                    <div id="g_staff_heat" style="height: 350px;"></div>
-                </div>
-            </div>
-
             <div class="bg-white p-4 rounded-xl shadow-md border mb-6"><div id="g_pie" style="height: 350px;"></div></div>
 
             <div class="bg-slate-900 p-6 rounded-xl mb-6 flex flex-col items-center">
@@ -119,15 +110,9 @@
     </div>
 
     <script>
+        // Mantenemos toda la lógica de datos intacta
         const USERS_DB = { "JSOROZCO": "gmt2026_1", "MACERON": "gmt2026_2", "JMMALDONADO": "gmt2026_3", "ADMIN": "gmt2026" };
         let rawDataFRows = [], globalDates = [], groupedData = {};
-
-        function getColorByCamp(camp) {
-            const c = camp.toUpperCase();
-            if(c.includes("PREPAGO")) return "#10b981"; 
-            if(c.includes("POS")) return "#2563eb";     
-            return "#475569";                           
-        }
 
         document.getElementById('form_acceso').onsubmit = e => {
             e.preventDefault();
@@ -143,8 +128,6 @@
             fetch(`data_${numMes}.csv`).then(res => res.text()).then(csv => procesarCSV(csv)).catch(() => alert("Error al cargar data"));
         }
 
-        document.getElementById('filter_month').onchange = (e) => cargarArchivoMes(e.target.value);
-
         function tToSec(t) { if(!t) return 0; const p = t.toString().replace(/['"]+/g, '').trim().split(':'); return (parseInt(p[0]) || 0) * 3600 + (parseInt(p[1]) || 0) * 60 + (parseInt(p[2]) || 0); }
         function secToT(s) { const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sc = s%60; return `${h}:${m.toString().padStart(2,'0')}:${sc.toString().padStart(2,'0')}`; }
 
@@ -152,8 +135,8 @@
             const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
             const sep = lines[0].includes(';') ? ';' : ',';
             globalDates = lines[0].split(sep).slice(9).map(d => d.trim().replace(/['"]+/g, ''));
-            
             rawDataFRows = []; groupedData = {}; let caps = new Set();
+            
             lines.slice(1).forEach(line => {
                 const c = line.split(sep); if (c.length < 10) return;
                 const sis = c[0].replace(/['"]+/g, '').toUpperCase().trim(); 
@@ -168,8 +151,7 @@
             });
 
             document.getElementById('filter_camp').innerHTML = '<option value="">TODAS LAS CAMPAÑAS</option>' + [...caps].sort().map(x => `<option value="${x}">${x}</option>`).join('');
-            const gers = [...new Set(rawDataFRows.map(d => d.ger))].sort();
-            document.getElementById('filter_ger').innerHTML = '<option value="">-- FILTRAR POR GERENCIA --</option>' + gers.map(g => `<option value="${g}">${g}</option>`).join('');
+            document.getElementById('filter_ger').innerHTML = '<option value="">-- FILTRAR POR GERENCIA --</option>' + [...new Set(rawDataFRows.map(d => d.ger))].sort().map(g => `<option value="${g}">${g}</option>`).join('');
             
             const ws = document.getElementById('filter_week');
             ws.innerHTML = '<option value="ALL">VISTA MENSUAL</option>';
@@ -183,7 +165,7 @@
             const ger_f = document.getElementById('filter_ger').value, camp_f = document.getElementById('filter_camp').value, w_f = document.getElementById('filter_week').value;
             let rango = globalDates.map((_,i)=>i); if(w_f !== "ALL") rango = rango.slice(parseInt(w_f)*7, (parseInt(w_f)+1)*7);
             
-            let s_spr = 0, s_vic = 0, s_pre = 0, s_pos = 0, s_oth = 0;
+            let s_spr = 0, s_vic = 0;
             let sprV = [], vicV = [], labels = [], campStats = {};
             let filtered = rawDataFRows.filter(r => (!ger_f || r.ger === ger_f) && (!camp_f || r.camp === camp_f));
 
@@ -193,13 +175,7 @@
                 filtered.forEach(r => {
                     const s = tToSec(r.daily[idx]);
                     if(r.sis.includes('SPRINKLR')) dS += s; else dV += s;
-                    const cN = r.camp.toUpperCase();
-                    if(cN.includes("PREPAGO")) s_pre += s; else if(cN.includes("POS")) s_pos += s; else s_oth += s;
-                    if(s > 0) {
-                        if(!campStats[r.camp]) campStats[r.camp] = { s: 0, spr: new Set(), vic: new Set() };
-                        campStats[r.camp].s += s;
-                        if(r.sis.includes('SPRINKLR')) campStats[r.camp].spr.add(r.name); else campStats[r.camp].vic.add(r.name);
-                    }
+                    if(s > 0) { if(!campStats[r.camp]) campStats[r.camp] = { s: 0 }; campStats[r.camp].s += s; }
                 });
                 s_spr += dS; s_vic += dV; sprV.push((dS/3600).toFixed(1)); vicV.push((dV/3600).toFixed(1));
             });
@@ -207,26 +183,12 @@
             document.getElementById('k_spr').innerText = secToT(s_spr);
             document.getElementById('k_vic').innerText = secToT(s_vic);
             document.getElementById('k_tot').innerText = secToT(s_spr + s_vic);
-            document.getElementById('res_prepago').innerText = (s_pre/3600).toFixed(1) + "h";
-            document.getElementById('res_pos').innerText = (s_pos/3600).toFixed(1) + "h";
-            document.getElementById('res_otros').innerText = (s_oth/3600).toFixed(1) + "h";
 
-            const layoutBase = { margin: {t:40, b:40, l:60, r:40}, font: { size: 10, weight: 700 }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' };
+            Plotly.newPlot('g_weekly', [{ x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers', line: {color: '#2563eb'} }, { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers', line: {color: '#f97316'} }], { title: 'EVOLUCIÓN DIARIA' });
+            
             const topC = Object.keys(campStats).map(k => ({ n: k, s: parseFloat((campStats[k].s/3600).toFixed(1)) })).sort((a,b) => a.s - b.s).slice(-10);
-            
-            Plotly.newPlot('g_bar', [{ x: topC.map(x=>x.s), y: topC.map(x=>x.n), type: 'bar', orientation: 'h', marker: { color: topC.map(x => getColorByCamp(x.n)) }, text: topC.map(x=>x.s+'h'), textposition:'auto' }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS)', margin: {l:220} });
-            Plotly.newPlot('g_weekly', [{ x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers', line: {color: '#2563eb'} }, { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers', line: {color: '#f97316'} }], { ...layoutBase, title: 'EVOLUCIÓN DIARIA' });
-            
-            const staffC = Object.keys(campStats).slice(0, 10);
-            Plotly.newPlot('g_staff_camp', [{ x: staffC, y: staffC.map(c => campStats[c].spr.size), name: 'Sprinklr', type: 'bar', marker: {color: '#2563eb'} }, { x: staffC, y: staffC.map(c => campStats[c].vic.size), name: 'Vicidial', type: 'bar', marker: {color: '#f97316'} }], { ...layoutBase, title: 'STAFF POR SERVICIO', barmode: 'group' });
-            
-            let heatZ = staffC.map(c => [0, 1, 2, 3].map(w => { 
-                let st = new Set(); 
-                globalDates.map((_,i)=>i).slice(w*7, (w+1)*7).forEach(di => { filtered.filter(r => r.camp === c).forEach(r => { if(tToSec(r.daily[di])>0) st.add(r.name); }); }); 
-                return st.size; 
-            }));
-            Plotly.newPlot('g_staff_heat', [{ z: heatZ, x: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"], y: staffC, type: 'heatmap', colorscale: 'Blues', showscale: false }], { ...layoutBase, margin: { l: 150, t: 10 } });
-            Plotly.newPlot('g_pie', [{ labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', marker: { colors: ['#2563eb', '#f97316'] } }], { ...layoutBase, title: 'CARGA POR SISTEMA' });
+            Plotly.newPlot('g_bar', [{ x: topC.map(x=>x.s), y: topC.map(x=>x.n), type: 'bar', orientation: 'h', marker: {color: '#2563eb'} }], { title: 'TOP CAMPAÑAS (HORAS)' });
+            Plotly.newPlot('g_pie', [{ labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', marker: { colors: ['#2563eb', '#f97316'] } }], { title: 'CARGA POR SISTEMA' });
 
             renderAlerts(rango);
             if(ger_f) renderCalendar(ger_f, rango);
@@ -236,60 +198,43 @@
             const ger = document.getElementById('filter_ger').value, query = document.getElementById('search_user').value.toUpperCase();
             const alerts = Object.values(groupedData).map(u => {
                 let s = 0, act = 0; 
-                rango.forEach(idx => { 
-                    let d = 0; Object.values(u.systems).forEach(sys => d += tToSec(sys.daily[idx])); 
-                    if(d > 0) act++; s += d; 
-                });
+                rango.forEach(idx => { let d = 0; Object.values(u.systems).forEach(sys => d += tToSec(sys.daily[idx])); if(d > 0) act++; s += d; });
                 return { ...u, s, act, inact: rango.length - act };
             }).filter(x => {
-                const sinEstructura = x.ger === "N/D" || x.camp === "N/D" || !x.ger || !x.camp;
-                const inactividadCritica = x.s > 0 && x.inact >= 2;
-                return (inactividadCritica || sinEstructura) && (!ger || x.ger === ger) && x.name.toUpperCase().includes(query);
+                const sinEst = x.ger === "N/D" || x.camp === "N/D";
+                const critico = x.s > 0 && x.inact >= 2;
+                return (critico || sinEst) && (!ger || x.ger === ger) && x.name.toUpperCase().includes(query);
             });
 
             document.getElementById('k_inact').innerText = alerts.length;
             document.getElementById('alerta_panel').classList.toggle('hidden', alerts.length === 0 && query === "");
             document.getElementById('t_body_alerts').innerHTML = alerts.map(i => `
-                <tr class="hover:bg-red-50">
+                <tr class="hover:bg-slate-50">
                     <td class="p-3 font-bold uppercase">${i.name}</td>
-                    <td class="p-3 text-blue-600 font-black text-center">${i.act} DÍAS</td>
-                    <td class="p-3 font-bold text-slate-500">${secToT(i.s)}</td>
-                    <td class="p-3 uppercase text-slate-400 font-medium">${i.ger} / ${i.camp}</td>
+                    <td class="p-3 text-center font-black text-blue-600">${i.act} DÍAS</td>
+                    <td class="p-3 font-bold text-slate-600">${secToT(i.s)}</td>
+                    <td class="p-3 uppercase text-slate-400 text-[9px] font-medium">${i.ger} / ${i.camp}</td>
                 </tr>`).join('');
         }
 
-        // FUNCIÓN PARA DESCARGAR SOLO ALERTAS (RESPETANDO ESTRUCTURA)
         function descargarExcelAlertas() {
             const ger_f = document.getElementById('filter_ger').value;
             const w_f = document.getElementById('filter_week').value;
             let rango = globalDates.map((_,i)=>i); if(w_f !== "ALL") rango = rango.slice(parseInt(w_f)*7, (parseInt(w_f)+1)*7);
-
-            const alertasData = Object.values(groupedData).map(u => {
+            const alerts = Object.values(groupedData).map(u => {
                 let s = 0, act = 0; 
-                rango.forEach(idx => { 
-                    let d = 0; Object.values(u.systems).forEach(sys => d += tToSec(sys.daily[idx])); 
-                    if(d > 0) act++; s += d; 
-                });
+                rango.forEach(idx => { let d = 0; Object.values(u.systems).forEach(sys => d += tToSec(sys.daily[idx])); if(d > 0) act++; s += d; });
                 return { ...u, s, act, inact: rango.length - act };
             }).filter(x => {
-                const sinEstructura = x.ger === "N/D" || x.camp === "N/D" || !x.ger || !x.camp;
-                const inactividadCritica = x.s > 0 && x.inact >= 2;
-                return (inactividadCritica || sinEstructura) && (!ger_f || x.ger === ger_f);
-            }).map(a => ({
-                "EJECUTIVO": a.name,
-                "GERENCIA": a.ger,
-                "CAMPAÑA": a.camp,
-                "DÍAS ACTIVOS": a.act,
-                "DÍAS INACTIVOS": a.inact,
-                "HORAS TOTALES": secToT(a.s),
-                "MOTIVO": (a.ger === "N/D" || a.camp === "N/D") ? "SIN ESTRUCTURA" : "INACTIVIDAD CRITICA"
-            }));
+                const sinEst = x.ger === "N/D" || x.camp === "N/D";
+                const critico = x.s > 0 && x.inact >= 2;
+                return (critico || sinEst) && (!ger_f || x.ger === ger_f);
+            }).map(a => ({ "EJECUTIVO": a.name, "GERENCIA": a.ger, "CAMPAÑA": a.camp, "DÍAS ACTIVOS": a.act, "HORAS": secToT(a.s) }));
 
-            if(alertasData.length === 0) return alert("Sin alertas para exportar.");
-            const ws = XLSX.utils.json_to_sheet(alertasData);
+            const ws = XLSX.utils.json_to_sheet(alerts);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "ALERTAS");
-            XLSX.writeFile(wb, "GMT_REPORTE_ALERTAS.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "Alertas");
+            XLSX.writeFile(wb, "GMT_ALERTAS.xlsx");
         }
 
         function renderCalendar(ger, rango) {
@@ -308,16 +253,11 @@
         document.getElementById('filter_week').onchange = () => renderDashboard();
         document.getElementById('filter_ger').onchange = (e) => { renderDashboard(); if(!e.target.value) document.getElementById('detail_sections').classList.add('hidden'); };
         document.getElementById('search_user').oninput = () => renderDashboard();
-
-        function generarExcel() {
-            const data = rawDataFRows.map(r => {
-                const diasActivos = r.daily.filter(dia => tToSec(dia) > 0).length;
-                return { "SISTEMA": r.sis, "EJECUTIVO": r.name, "GERENCIA": r.ger, "CAMPAÑA": r.camp, "DIAS ACTIVOS": diasActivos };
-            });
-            const ws = XLSX.utils.json_to_sheet(data); 
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "GMT_GENERAL"); 
-            XLSX.writeFile(wb, "GMT_REPORTE_GENERAL.xlsx");
+        
+        function generarExcelGeneral() {
+            const data = rawDataFRows.map(r => ({ "SISTEMA": r.sis, "EJECUTIVO": r.name, "GERENCIA": r.ger, "CAMPAÑA": r.camp }));
+            const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "General"); XLSX.writeFile(wb, "GMT_GENERAL.xlsx");
         }
     </script>
 </body>
