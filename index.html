@@ -267,31 +267,37 @@
     
   // --- GRÁFICA DE CALOR (HEATMAP) CON ETIQUETAS ---
     let heatZ = staffC.map(c => [0, 1, 2, 3].map(w => { 
-        let st = new Set(); 
-        globalDates.map((_,i)=>i).slice(w*7, (w+1)*7).forEach(di => { 
-            filtered.filter(r => r.camp === c).forEach(r => { 
-                if(tToSec(r.daily[di])>0) st.add(r.name); 
-            }); 
-        }); 
-        return st.size; 
-    }));
+                let st = new Set(); 
+                globalDates.map((_,i)=>i).slice(w*7, (w+1)*7).forEach(di => { 
+                    filtered.filter(r => r.camp === c).forEach(r => { 
+                        if(tToSec(r.daily[di])>0) st.add(r.name); 
+                    }); 
+                }); 
+                return st.size; 
+            }));
 
-    Plotly.newPlot('g_staff_heat', [{ 
-        z: heatZ, 
-        x: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"], 
-        y: staffC, 
-        type: 'heatmap', 
-        colorscale: 'Blues', 
-        showscale: false,
-        // --- AQUÍ SE AGREGAN LAS ETIQUETAS ---
-        text: heatZ, 
-        texttemplate: "%{text}", // Muestra el valor de la celda
-        textfont: { size: 12, color: 'black', weight: 'bold' } 
-    }], { ...layoutBase, margin: { l: 150, t: 10 } });
+            // 2. Dibujar Heatmap con etiquetas
+            Plotly.newPlot('g_staff_heat', [{ 
+                z: heatZ, x: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"], y: staffC, 
+                type: 'heatmap', colorscale: 'Blues', showscale: false,
+                text: heatZ, texttemplate: "%{text}", 
+                textfont: { size: 12, color: 'black', weight: 'bold' } 
+            }], { ...layoutBase, margin: { l: 150, t: 10 } });
 
-    renderAlerts(rango);
-    if(ger_f) renderCalendar(ger_f, rango);
-}
+            // 3. REINSTALAR GRÁFICA DE PASTEL (La que se borró)
+            Plotly.newPlot('g_pie', [{ 
+                labels: ['Sprinklr', 'Vicidial'], 
+                values: [s_spr, s_vic], 
+                type: 'pie', 
+                textinfo: 'label+percent', // Muestra nombre y %
+                marker: { colors: ['#2563eb', '#f97316'] },
+                hole: 0.4 // Esto la hace tipo "Donut" si prefieres, o pon 0 para pastel completo
+            }], { ...layoutBase, title: 'CARGA POR SISTEMA' });
+
+            // 4. Funciones finales
+            renderAlerts(rango);
+            if(ger_f) renderCalendar(ger_f, rango);
+        }
 
         function renderAlerts(rango) {
             const ger = document.getElementById('filter_ger').value, query = document.getElementById('search_user').value.toUpperCase();
@@ -382,6 +388,7 @@
     </script>
 </body>
 </html>
+
 
 
 
