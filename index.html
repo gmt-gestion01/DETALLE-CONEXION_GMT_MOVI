@@ -194,58 +194,97 @@
             renderDashboard();
         }
 
-        function renderDashboard() {
-            const ger_f = document.getElementById('filter_ger').value, camp_f = document.getElementById('filter_camp').value, w_f = document.getElementById('filter_week').value;
-            let rango = globalDates.map((_,i)=>i); if(w_f !== "ALL") rango = rango.slice(parseInt(w_f)*7, (parseInt(w_f)+1)*7);
-            
-            let s_spr = 0, s_vic = 0, s_pre = 0, s_pos = 0, s_oth = 0;
-            let sprV = [], vicV = [], labels = [], campStats = {};
-            let filtered = rawDataFRows.filter(r => (!ger_f || r.ger === ger_f) && (!camp_f || r.camp === camp_f));
+       function renderDashboard() {
+    const ger_f = document.getElementById('filter_ger').value, camp_f = document.getElementById('filter_camp').value, w_f = document.getElementById('filter_week').value;
+    let rango = globalDates.map((_,i)=>i); if(w_f !== "ALL") rango = rango.slice(parseInt(w_f)*7, (parseInt(w_f)+1)*7);
+    
+    let s_spr = 0, s_vic = 0, s_pre = 0, s_pos = 0, s_oth = 0;
+    let sprV = [], vicV = [], labels = [], campStats = {};
+    let filtered = rawDataFRows.filter(r => (!ger_f || r.ger === ger_f) && (!camp_f || r.camp === camp_f));
 
-            rango.forEach(idx => {
-                labels.push(globalDates[idx].substring(0,5));
-                let dS = 0, dV = 0;
-                filtered.forEach(r => {
-                    const s = tToSec(r.daily[idx]);
-                    if(r.sis.includes('SPRINKLR')) dS += s; else dV += s;
-                    const cN = r.camp.toUpperCase();
-                    if(cN.includes("PREPAGO")) s_pre += s; else if(cN.includes("POS")) s_pos += s; else s_oth += s;
-                    if(s > 0) {
-                        if(!campStats[r.camp]) campStats[r.camp] = { s: 0, spr: new Set(), vic: new Set() };
-                        campStats[r.camp].s += s;
-                        if(r.sis.includes('SPRINKLR')) campStats[r.camp].spr.add(r.name); else campStats[r.camp].vic.add(r.name);
-                    }
-                });
-                s_spr += dS; s_vic += dV; sprV.push((dS/3600).toFixed(1)); vicV.push((dV/3600).toFixed(1));
-            });
+    rango.forEach(idx => {
+        labels.push(globalDates[idx].substring(0,5));
+        let dS = 0, dV = 0;
+        filtered.forEach(r => {
+            const s = tToSec(r.daily[idx]);
+            if(r.sis.includes('SPRINKLR')) dS += s; else dV += s;
+            const cN = r.camp.toUpperCase();
+            if(cN.includes("PREPAGO")) s_pre += s; else if(cN.includes("POS")) s_pos += s; else s_oth += s;
+            if(s > 0) {
+                if(!campStats[r.camp]) campStats[r.camp] = { s: 0, spr: new Set(), vic: new Set() };
+                campStats[r.camp].s += s;
+                if(r.sis.includes('SPRINKLR')) campStats[r.camp].spr.add(r.name); else campStats[r.camp].vic.add(r.name);
+            }
+        });
+        s_spr += dS; s_vic += dV; sprV.push((dS/3600).toFixed(1)); vicV.push((dV/3600).toFixed(1));
+    });
 
-            document.getElementById('k_spr').innerText = secToT(s_spr);
-            document.getElementById('k_vic').innerText = secToT(s_vic);
-            document.getElementById('k_tot').innerText = secToT(s_spr + s_vic);
-            document.getElementById('res_prepago').innerText = (s_pre/3600).toFixed(1) + "h";
-            document.getElementById('res_pos').innerText = (s_pos/3600).toFixed(1) + "h";
-            document.getElementById('res_otros').innerText = (s_oth/3600).toFixed(1) + "h";
+    document.getElementById('k_spr').innerText = secToT(s_spr);
+    document.getElementById('k_vic').innerText = secToT(s_vic);
+    document.getElementById('k_tot').innerText = secToT(s_spr + s_vic);
+    document.getElementById('res_prepago').innerText = (s_pre/3600).toFixed(1) + "h";
+    document.getElementById('res_pos').innerText = (s_pos/3600).toFixed(1) + "h";
+    document.getElementById('res_otros').innerText = (s_oth/3600).toFixed(1) + "h";
 
-            const layoutBase = { margin: {t:40, b:40, l:60, r:40}, font: { size: 10, weight: 700 }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' };
-            const topC = Object.keys(campStats).map(k => ({ n: k, s: parseFloat((campStats[k].s/3600).toFixed(1)) })).sort((a,b) => a.s - b.s).slice(-10);
-            
-            Plotly.newPlot('g_bar', [{ x: topC.map(x=>x.s), y: topC.map(x=>x.n), type: 'bar', orientation: 'h', marker: { color: topC.map(x => getColorByCamp(x.n)) }, text: topC.map(x=>x.s+'h'), textposition:'auto' }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS)', margin: {l:220} });
-            Plotly.newPlot('g_weekly', [{ x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers', line: {color: '#2563eb'} }, { x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers', line: {color: '#f97316'} }], { ...layoutBase, title: 'EVOLUCIÓN DIARIA' });
-            
-            const staffC = Object.keys(campStats).slice(0, 10);
-            Plotly.newPlot('g_staff_camp', [{ x: staffC, y: staffC.map(c => campStats[c].spr.size), name: 'Sprinklr', type: 'bar', marker: {color: '#2563eb'} }, { x: staffC, y: staffC.map(c => campStats[c].vic.size), name: 'Vicidial', type: 'bar', marker: {color: '#f97316'} }], { ...layoutBase, title: 'STAFF POR SERVICIO', barmode: 'group' });
-            
-            let heatZ = staffC.map(c => [0, 1, 2, 3].map(w => { 
-                let st = new Set(); 
-                globalDates.map((_,i)=>i).slice(w*7, (w+1)*7).forEach(di => { filtered.filter(r => r.camp === c).forEach(r => { if(tToSec(r.daily[di])>0) st.add(r.name); }); }); 
-                return st.size; 
-            }));
-            Plotly.newPlot('g_staff_heat', [{ z: heatZ, x: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"], y: staffC, type: 'heatmap', colorscale: 'Blues', showscale: false }], { ...layoutBase, margin: { l: 150, t: 10 } });
-            Plotly.newPlot('g_pie', [{ labels: ['Sprinklr', 'Vicidial'], values: [s_spr, s_vic], type: 'pie', marker: { colors: ['#2563eb', '#f97316'] } }], { ...layoutBase, title: 'CARGA POR SISTEMA' });
+    const layoutBase = { margin: {t:40, b:40, l:60, r:40}, font: { size: 10, weight: 700 }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)' };
+    const topC = Object.keys(campStats).map(k => ({ n: k, s: parseFloat((campStats[k].s/3600).toFixed(1)) })).sort((a,b) => a.s - b.s).slice(-10);
+    
+    // Gráfica de Barras con etiquetas
+    Plotly.newPlot('g_bar', [{ 
+        x: topC.map(x=>x.s), 
+        y: topC.map(x=>x.n), 
+        type: 'bar', 
+        orientation: 'h', 
+        marker: { color: topC.map(x => getColorByCamp(x.n)) }, 
+        text: topC.map(x=>x.s+'h'), 
+        textposition:'auto' 
+    }], { ...layoutBase, title: 'TOP 10 CAMPAÑAS (HORAS)', margin: {l:220} });
 
-            renderAlerts(rango);
-            if(ger_f) renderCalendar(ger_f, rango);
+    // Gráfica de Evolución con etiquetas
+    Plotly.newPlot('g_weekly', [
+        { 
+            x: labels, y: sprV, name: 'Sprinklr', type: 'scatter', mode: 'lines+markers+text', 
+            text: sprV, textposition: 'top center', line: {color: '#2563eb'} 
+        }, 
+        { 
+            x: labels, y: vicV, name: 'Vicidial', type: 'scatter', mode: 'lines+markers+text', 
+            text: vicV, textposition: 'bottom center', line: {color: '#f97316'} 
         }
+    ], { ...layoutBase, title: 'EVOLUCIÓN DIARIA' });
+    
+    // Gráfica de Staff con etiquetas
+    const staffC = Object.keys(campStats).slice(0, 10);
+    Plotly.newPlot('g_staff_camp', [
+        { 
+            x: staffC, y: staffC.map(c => campStats[c].spr.size), name: 'Sprinklr', type: 'bar', 
+            text: staffC.map(c => campStats[c].spr.size), textposition: 'auto', marker: {color: '#2563eb'} 
+        }, 
+        { 
+            x: staffC, y: staffC.map(c => campStats[c].vic.size), name: 'Vicidial', type: 'bar', 
+            text: staffC.map(c => campStats[c].vic.size), textposition: 'auto', marker: {color: '#f97316'} 
+        }
+    ], { ...layoutBase, title: 'STAFF POR SERVICIO', barmode: 'group' });
+    
+    // Gráfica de Heatmap (Sin etiquetas de texto para evitar saturación visual)
+    let heatZ = staffC.map(c => [0, 1, 2, 3].map(w => { 
+        let st = new Set(); 
+        globalDates.map((_,i)=>i).slice(w*7, (w+1)*7).forEach(di => { filtered.filter(r => r.camp === c).forEach(r => { if(tToSec(r.daily[di])>0) st.add(r.name); }); }); 
+        return st.size; 
+    }));
+    Plotly.newPlot('g_staff_heat', [{ z: heatZ, x: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"], y: staffC, type: 'heatmap', colorscale: 'Blues', showscale: false }], { ...layoutBase, margin: { l: 150, t: 10 } });
+
+    // Gráfica de Pie con etiquetas de porcentaje
+    Plotly.newPlot('g_pie', [{ 
+        labels: ['Sprinklr', 'Vicidial'], 
+        values: [s_spr, s_vic], 
+        type: 'pie', 
+        textinfo: 'label+percent',
+        marker: { colors: ['#2563eb', '#f97316'] } 
+    }], { ...layoutBase, title: 'CARGA POR SISTEMA' });
+
+    renderAlerts(rango);
+    if(ger_f) renderCalendar(ger_f, rango);
+}
 
         function renderAlerts(rango) {
             const ger = document.getElementById('filter_ger').value, query = document.getElementById('search_user').value.toUpperCase();
@@ -336,4 +375,5 @@
     </script>
 </body>
 </html>
+
 
