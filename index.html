@@ -158,7 +158,14 @@
         function procesarCSV(csvText) {
             const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
             const sep = lines[0].includes(';') ? ';' : ',';
+            
+            // 1. Extraemos las fechas de la primera fila
             globalDates = lines[0].split(sep).slice(9).map(d => d.trim().replace(/['"]+/g, ''));
+            
+            // 2. MODIFICACIÓN AQUÍ: Actualiza el texto de la interfaz con la última fecha encontrada
+            if(globalDates.length > 0) {
+                document.getElementById('last_update').innerText = globalDates[globalDates.length - 1];
+            }
             
             rawDataFRows = []; groupedData = {}; let caps = new Set();
             lines.slice(1).forEach(line => {
@@ -174,6 +181,7 @@
                 groupedData[name].systems[sis] = { daily };
             });
 
+            // Actualización de selectores de interfaz
             document.getElementById('filter_camp').innerHTML = '<option value="">TODAS LAS CAMPAÑAS</option>' + [...caps].sort().map(x => `<option value="${x}">${x}</option>`).join('');
             const gers = [...new Set(rawDataFRows.map(d => d.ger))].sort();
             document.getElementById('filter_ger').innerHTML = '<option value="">-- FILTRAR POR GERENCIA --</option>' + gers.map(g => `<option value="${g}">${g}</option>`).join('');
@@ -328,3 +336,4 @@
     </script>
 </body>
 </html>
+
