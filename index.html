@@ -265,22 +265,29 @@
         }
     ], { ...layoutBase, title: 'STAFF POR SERVICIO', barmode: 'group' });
     
-    // Gráfica de Heatmap (Sin etiquetas de texto para evitar saturación visual)
+  // --- GRÁFICA DE CALOR (HEATMAP) CON ETIQUETAS ---
     let heatZ = staffC.map(c => [0, 1, 2, 3].map(w => { 
         let st = new Set(); 
-        globalDates.map((_,i)=>i).slice(w*7, (w+1)*7).forEach(di => { filtered.filter(r => r.camp === c).forEach(r => { if(tToSec(r.daily[di])>0) st.add(r.name); }); }); 
+        globalDates.map((_,i)=>i).slice(w*7, (w+1)*7).forEach(di => { 
+            filtered.filter(r => r.camp === c).forEach(r => { 
+                if(tToSec(r.daily[di])>0) st.add(r.name); 
+            }); 
+        }); 
         return st.size; 
     }));
-    Plotly.newPlot('g_staff_heat', [{ z: heatZ, x: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"], y: staffC, type: 'heatmap', colorscale: 'Blues', showscale: false }], { ...layoutBase, margin: { l: 150, t: 10 } });
 
-    // Gráfica de Pie con etiquetas de porcentaje
-    Plotly.newPlot('g_pie', [{ 
-        labels: ['Sprinklr', 'Vicidial'], 
-        values: [s_spr, s_vic], 
-        type: 'pie', 
-        textinfo: 'label+percent',
-        marker: { colors: ['#2563eb', '#f97316'] } 
-    }], { ...layoutBase, title: 'CARGA POR SISTEMA' });
+    Plotly.newPlot('g_staff_heat', [{ 
+        z: heatZ, 
+        x: ["Sem 1", "Sem 2", "Sem 3", "Sem 4"], 
+        y: staffC, 
+        type: 'heatmap', 
+        colorscale: 'Blues', 
+        showscale: false,
+        // --- AQUÍ SE AGREGAN LAS ETIQUETAS ---
+        text: heatZ, 
+        texttemplate: "%{text}", // Muestra el valor de la celda
+        textfont: { size: 12, color: 'black', weight: 'bold' } 
+    }], { ...layoutBase, margin: { l: 150, t: 10 } });
 
     renderAlerts(rango);
     if(ger_f) renderCalendar(ger_f, rango);
@@ -375,5 +382,6 @@
     </script>
 </body>
 </html>
+
 
 
