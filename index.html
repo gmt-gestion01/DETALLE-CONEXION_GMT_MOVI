@@ -159,14 +159,33 @@
             const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
             const sep = lines[0].includes(';') ? ';' : ',';
             
-            // 1. Extraemos las fechas de la primera fila
+            // 1. Extraemos las fechas a partir de la columna 10 (índice 9)
             globalDates = lines[0].split(sep).slice(9).map(d => d.trim().replace(/['"]+/g, ''));
             
-            // 2. MODIFICACIÓN AQUÍ: Actualiza el texto de la interfaz con la última fecha encontrada
+            // 2. Colocamos la ÚLTIMA fecha del archivo en el encabezado
             if(globalDates.length > 0) {
                 const ultimaFecha = globalDates[globalDates.length - 1];
                 document.getElementById('last_update').innerText = ultimaFecha;
             }
+            
+            rawDataFRows = []; groupedData = {}; let caps = new Set();
+            lines.slice(1).forEach(line => {
+                const c = line.split(sep); 
+                if (c.length < 10) return; // Evita líneas incompletas
+
+                const sis = c[0].replace(/['"]+/g, '').toUpperCase().trim(); 
+                const name = c[1].replace(/['"]+/g, '').trim(); 
+                const ger = (c[3] || '').replace(/['"]+/g, '').trim().toUpperCase() || "N/D";
+                const camp = (c[4] || '').replace(/['"]+/g, '').trim().toUpperCase() || "N/D";
+                
+                // 3. Capturamos la data diaria empezando también en la columna 10
+                const daily = c.slice(9);
+                
+                caps.add(camp);
+                rawDataFRows.push({ sis, name, ger, camp, daily });
+                if(!groupedData[name]) groupedData[name] = { name, ger, camp, systems: {} };
+                groupedData[name].systems[sis] = { daily };
+            });
             
             rawDataFRows = []; groupedData = {}; let caps = new Set();
             lines.slice(1).forEach(line => {
@@ -389,8 +408,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
