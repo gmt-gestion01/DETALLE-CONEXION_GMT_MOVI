@@ -164,7 +164,8 @@
             
             // 2. MODIFICACIÓN AQUÍ: Actualiza el texto de la interfaz con la última fecha encontrada
             if(globalDates.length > 0) {
-                document.getElementById('last_update').innerText = globalDates[globalDates.length - 1];
+                const ultimaFecha = globalDates[globalDates.length - 1];
+                document.getElementById('last_update').innerText = ultimaFecha;
             }
             
             rawDataFRows = []; groupedData = {}; let caps = new Set();
@@ -388,6 +389,7 @@
     </script>
 </body>
 </html>
+
 
 
 
