@@ -103,16 +103,6 @@
             return "#475569";                           
         }
 
-        document.getElementById('form_acceso').onsubmit = e => {
-            e.preventDefault();
-            const u = document.getElementById('user_name').value.toUpperCase().trim();
-            const p = document.getElementById('pass').value;
-            if(USERS_DB[u] === p) {
-                document.getElementById('login_layer').style.display = 'none';
-                document.getElementById('dashboard_wrapper').classList.remove('hidden');
-                cargarArchivoMes(document.getElementById('filter_month').value);
-            } else { alert("Usuario o contraseña incorrectos"); }
-        };
 
         function cargarArchivoMes(numMes) {
             fetch(`data_${numMes}.csv`).then(res => res.text()).then(csv => procesarCSV(csv)).catch(() => alert("Error al cargar data"));
@@ -277,6 +267,7 @@
     </script>
 </body>
 </html>
+
 
 
 
