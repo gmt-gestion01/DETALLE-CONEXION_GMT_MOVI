@@ -92,9 +92,25 @@
         </div>
     </div>
 
-    <script>
+<script>
         const USERS_DB = { "JSOROZCO": "gmt2026_1", "MACERON": "gmt2026_2", "JMMALDONADO": "gmt2026_3", "ADMIN": "gmt2026", "ACARDOZO": "gmt2026_4" };
         let rawDataFRows = [], globalDates = [], groupedData = {};
+
+        // Función de Acceso: Valida usuario y carga el mes inicial
+        document.getElementById('form_acceso').onsubmit = e => {
+            e.preventDefault();
+            const u = document.getElementById('user_name').value.toUpperCase().trim();
+            const p = document.getElementById('pass').value.trim();
+
+            if (USERS_DB[u] && USERS_DB[u] === p) {
+                document.getElementById('login_layer').style.display = 'none';
+                document.getElementById('dashboard_wrapper').classList.remove('hidden');
+                // Al entrar, carga automáticamente febrero (o el mes seleccionado)
+                cargarArchivoMes(document.getElementById('filter_month').value);
+            } else {
+                alert("Usuario o contraseña incorrectos");
+            }
+        };
 
         function getColorByCamp(camp) {
             const c = camp.toUpperCase();
@@ -272,7 +288,7 @@ function secToT(s) {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sc = s % 60;
-    return `${h}:${m.toString().padStart(2, '0')}:${sc.toString().padStart(2, '0')}`;
+   return h + ":" + m.toString().padStart(2, '0') + ":" + sc.toString().padStart(2, '0');
 }
 
 // Activa el cambio de mes en el selector
@@ -280,6 +296,7 @@ document.getElementById('filter_month').onchange = (e) => cargarArchivoMes(e.tar
     </script>
 </body>
 </html>
+
 
 
 
