@@ -105,23 +105,19 @@
 
 
         function cargarArchivoMes(numMes) {
-            fetch(`data_${numMes}.csv`).then(res => res.text()).then(csv => procesarCSV(csv)).catch(() => alert("Error al cargar data"));
-        }
-
-       document.getElementById('form_acceso').onsubmit = e => {
-    e.preventDefault();
-    const u = document.getElementById('user_name').value.toUpperCase().trim();
-    const p = document.getElementById('pass').value.trim(); // Añadimos .trim() aquí también
-    
-    // Esto busca el usuario 'ACARDOZO' y lo compara con su clave
-    if(USERS_DB[u] && USERS_DB[u] === p) {
-        document.getElementById('login_layer').style.display = 'none';
-        document.getElementById('dashboard_wrapper').classList.remove('hidden');
-        cargarArchivoMes(document.getElementById('filter_month').value);
-    } else { 
-        alert("Usuario o contraseña incorrectos"); 
-    }
-};
+    // Añadimos un parámetro aleatorio para evitar que el navegador cargue una versión vieja (caché)
+    const cacheBuster = `?v=${new Date().getTime()}`;
+    fetch(`data_${numMes}.csv${cacheBuster}`)
+        .then(res => {
+            if (!res.ok) throw new Error(`No se encontró el archivo data_${numMes}.csv`);
+            return res.text();
+        })
+        .then(csv => procesarCSV(csv))
+        .catch((err) => {
+            console.error(err);
+            alert("ERROR CRÍTICO: " + err.message + "\n\nVerifica que el archivo esté subido a GitHub con ese nombre exacto.");
+        });
+}
 
         function procesarCSV(csvText) {
             const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
@@ -267,6 +263,7 @@
     </script>
 </body>
 </html>
+
 
 
 
