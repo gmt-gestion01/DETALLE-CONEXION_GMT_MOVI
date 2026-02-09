@@ -260,9 +260,27 @@
             const data = rawDataFRows.map(r => ({ "SISTEMA": r.sis, "EJECUTIVO": r.name, "GERENCIA": r.ger, "CAMPAÑA": r.camp, "DÍAS ACTIVOS": r.daily.filter(dia => tToSec(dia) > 0).length }));
             const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "DATA"); XLSX.writeFile(wb, "GMT_REPORTE_GENERAL.xlsx");
         }
+        // Funciones esenciales para calcular el tiempo
+function tToSec(t) {
+    if (!t || t === "0" || t === "" || t === "N/D") return 0;
+    const p = t.split(':');
+    if (p.length !== 3) return 0;
+    return (+p[0]) * 3600 + (+p[1]) * 60 + (+p[2]);
+}
+
+function secToT(s) {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sc = s % 60;
+    return `${h}:${m.toString().padStart(2, '0')}:${sc.toString().padStart(2, '0')}`;
+}
+
+// Activa el cambio de mes en el selector
+document.getElementById('filter_month').onchange = (e) => cargarArchivoMes(e.target.value);
     </script>
 </body>
 </html>
+
 
 
 
