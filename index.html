@@ -100,14 +100,11 @@
             e.preventDefault();
             const u = document.getElementById('user_name').value.toUpperCase().trim();
             const p = document.getElementById('pass').value.trim();
-
             if (USERS_DB[u] && USERS_DB[u] === p) {
                 document.getElementById('login_layer').style.display = 'none';
                 document.getElementById('dashboard_wrapper').classList.remove('hidden');
                 cargarArchivoMes(document.getElementById('filter_month').value);
-            } else {
-                alert("Usuario o contraseña incorrectos");
-            }
+            } else { alert("Usuario o contraseña incorrectos"); }
         };
 
         function getColorByCamp(camp) {
@@ -125,20 +122,16 @@
                     return res.text();
                 })
                 .then(csv => procesarCSV(csv))
-                .catch((err) => {
-                    console.error(err);
-                    alert("ERROR: " + err.message);
-                });
+                .catch((err) => { console.error(err); alert("ERROR: " + err.message); });
         }
 
         function procesarCSV(csvText) {
             const lines = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
             if (lines.length === 0) return;
             const sep = lines[0].includes(';') ? ';' : ',';
-            
             const headers = lines[0].split(sep).map(h => h.replace(/['"]+/g, '').trim());
             
-            // FILTRO DE FECHAS: Solo columnas con "/"
+            // Filtro para detectar solo columnas de fechas reales
             globalDates = headers.slice(9).filter(d => d.includes('/') && d.length >= 8);
             
             if(globalDates.length > 0) {
@@ -149,13 +142,11 @@
             lines.slice(1).forEach(line => {
                 const c = line.split(sep).map(x => x.replace(/['"]+/g, '').trim());
                 if (c.length < 10) return;
-                
                 const sis = c[0].toUpperCase(); 
                 const name = c[1]; 
                 const ger = (c[3] || "N/D").toUpperCase();
                 const camp = (c[4] || "N/D").toUpperCase();
                 const daily = c.slice(9, 9 + globalDates.length);
-                
                 if(camp !== "" && camp !== "N/D") caps.add(camp);
                 rawDataFRows.push({ sis, name, ger, camp, daily });
                 if(!groupedData[name]) groupedData[name] = { name, ger, camp, systems: {} };
@@ -238,11 +229,15 @@
                     if(d > 0) act++; s += d; 
                 });
                 return { ...u, s, act, inact: rango.length - act };
-            }).filter(x => {
-                const sinEstructura = x.ger === "N/D" || x.camp === "N/D" || !x.ger || !x.camp;
+            })
+            .filter(x => {
+                const sinEstructura = x.ger === "N/D" || x.camp === "N/D" || x.ger.includes("SIN GERENCIA");
                 const inactividadCritica = x.s > 0 && x.inact >= 2;
                 return (inactividadCritica || sinEstructura) && (!ger || x.ger === ger) && x.name.toUpperCase().includes(query);
-            });
+            })
+            // ORDENAMIENTO: Menor a Mayor días activos
+            .sort((a, b) => a.act - b.act);
+
             document.getElementById('k_inact').innerText = alerts.length;
             document.getElementById('alerta_panel').classList.toggle('hidden', alerts.length === 0 && query === "");
             document.getElementById('t_body_alerts').innerHTML = alerts.map(i => `<tr class="hover:bg-red-50"><td class="p-3 font-bold uppercase">${i.name}</td><td class="p-3 text-blue-600 font-black text-center">${i.act} DÍAS</td><td class="p-3 font-bold text-slate-500">${secToT(i.s)}</td><td class="p-3 uppercase text-slate-400 font-medium">${i.ger} / ${i.camp}</td></tr>`).join('');
@@ -254,7 +249,12 @@
             const data = Object.values(groupedData).map(u => {
                 let s = 0, act = 0; rango.forEach(idx => { let d = 0; Object.values(u.systems).forEach(sys => d += tToSec(sys.daily[idx])); if(d > 0) act++; s += d; });
                 return { ...u, s, act, inact: rango.length - act };
-            }).filter(x => (x.s > 0 && x.inact >= 2 || x.ger === "N/D") && (!ger_f || x.ger === ger_f)).map(a => ({ "EJECUTIVO": a.name, "GERENCIA": a.ger, "CAMPAÑA": a.camp, "DÍAS ACTIVOS": a.act, "HORAS TOTALES": secToT(a.s) }));
+            })
+            .filter(x => (x.s > 0 && x.inact >= 2 || x.ger === "N/D" || x.ger.includes("SIN GERENCIA")) && (!ger_f || x.ger === ger_f))
+            // ORDENAMIENTO: Menor a Mayor días activos
+            .sort((a, b) => a.act - b.act)
+            .map(a => ({ "EJECUTIVO": a.name, "GERENCIA": a.ger, "CAMPAÑA": a.camp, "DÍAS ACTIVOS": a.act, "HORAS TOTALES": secToT(a.s) }));
+            
             const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "ALERTAS"); XLSX.writeFile(wb, "GMT_ALERTAS.xlsx");
         }
 
